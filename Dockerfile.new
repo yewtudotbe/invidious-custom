@@ -1,0 +1,39 @@
+FROM alpine:edge AS builder
+RUN apk add --no-cache 'crystal=1.1.1-r0' shards sqlite-static yaml-static yaml-dev libxml2-dev zlib-static openssl-libs-static openssl-dev musl-dev yq
+
+WORKDIR /invidious
+COPY ./invidious/shard.yml ./shard.yml
+COPY ./invidious/shard.lock ./shard.lock
+RUN yq e -i '.dependencies.raven.github = "Sija/raven.cr"' shard.yml
+RUN yq e -i '.targets.sentry_crash_handler.main = "lib/raven/src/crash_handler.cr"' shard.yml
+RUN shards install
+
+COPY --from=quay.io/invidious/lsquic-compiled /root/liblsquic.a ./lib/lsquic/src/lsquic/ext/liblsquic.a
+
+COPY ./invidious/src/ ./src/
+# TODO: .git folder is required for building – this is destructive.
+# See definition of CURRENT_BRANCH, CURRENT_COMMIT and CURRENT_VERSION.
+COPY ./invidious/.git/ ./.git/
+RUN crystal build --release ./src/invidious.cr \
+    --static --warnings all \
+    --link-flags "-lxml2 -llzma"
+RUN shards build --release --static sentry_crash_handler
+
+FROM alpine:edge
+RUN apk add --no-cache librsvg ttf-opensans
+WORKDIR /invidious
+RUN addgroup -g 1000 -S invidious && \
+    adduser -u 1000 -S invidious -G invidious
+COPY ./invidious/assets/ ./assets/
+COPY --chown=invidious ./invidious/config/config.* ./config/
+RUN mv -n config/config.example.yml config/config.yml
+RUN sed -i 's/host: \(127.0.0.1\|localhost\)/host: postgres/' config/config.yml
+COPY ./invidious/config/sql/ ./config/sql/
+COPY ./invidious/locales/ ./locales/
+COPY --from=builder /invidious/invidious .
+COPY --from=builder /invidious/bin/sentry_crash_handler .
+RUN chmod o+rX -R ./assets ./config ./locales
+
+EXPOSE 3000
+USER invidious
+CMD [ "/invidious/sentry_crash_handler", "/invidious/invidious" ]

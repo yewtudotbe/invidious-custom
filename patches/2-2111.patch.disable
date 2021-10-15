@@ -1,0 +1,45 @@
+From 78773d732672d8985795fb040a39dd7e946c7b7c Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Sat, 22 May 2021 17:42:23 +0200
+Subject: [PATCH] add the ability to listen on unix sockets
+
+---
+ src/invidious.cr                 | 15 ++++++++++++---
+ src/invidious/helpers/helpers.cr |  1 +
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index ae20e13e5..65b1091bb 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -3917,6 +3917,15 @@ add_context_storage_type(Preferences)
+ add_context_storage_type(User)
+ 
+ Kemal.config.logger = LOGGER
+-Kemal.config.host_binding = Kemal.config.host_binding != "0.0.0.0" ? Kemal.config.host_binding : CONFIG.host_binding
+-Kemal.config.port = Kemal.config.port != 3000 ? Kemal.config.port : CONFIG.port
+-Kemal.run
++
++Kemal.run do |config|
++  if CONFIG.bind_unix
++    if File.exists?(CONFIG.bind_unix.not_nil!)
++      File.delete(CONFIG.bind_unix.not_nil!)
++    end
++    config.server.not_nil!.bind_unix CONFIG.bind_unix.not_nil!
++  else
++    config.host_binding = config.host_binding != "0.0.0.0" ? config.host_binding : CONFIG.host_binding
++    config.port = config.port != 3000 ? config.port : CONFIG.port
++  end
++end
+diff --git a/src/invidious/helpers/helpers.cr b/src/invidious/helpers/helpers.cr
+index e1d877b78..6a5789a0e 100644
+--- a/src/invidious/helpers/helpers.cr
++++ b/src/invidious/helpers/helpers.cr
+@@ -98,6 +98,7 @@ class Config
+   property force_resolve : Socket::Family = Socket::Family::UNSPEC # Connect to YouTube over 'ipv6', 'ipv4'. Will sometimes resolve fix issues with rate-limiting (see https://github.com/ytdl-org/youtube-dl/issues/21729)
+   property port : Int32 = 3000                                     # Port to listen for connections (overrided by command line argument)
+   property host_binding : String = "0.0.0.0"                       # Host to bind (overrided by command line argument)
++  property bind_unix : String? = nil                               # Make Invidious listening on UNIX sockets - Example: /tmp/invidious.sock
+   property pool_size : Int32 = 100                                 # Pool size for HTTP requests to youtube.com and ytimg.com (each domain has a separate pool of `pool_size`)
+   property use_quic : Bool = true                                  # Use quic transport for youtube api
+ 

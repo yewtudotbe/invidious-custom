@@ -1,0 +1,80 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 0 * * *'
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+      with:
+        platforms: arm64
+    - name: Check Out Repo
+      uses: actions/checkout@v2
+
+    - name: Check Out Repo Invidious
+      uses: actions/checkout@v2
+      with:
+        repository: "iv-org/invidious"
+        ref: 'master'
+        path: 'invidious'
+
+    - run: |
+        cd invidious
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+        git am ../patches/*.patch
+        sed -i 's/https:\/\/invidious.io\/donate\//\/donate/g' src/invidious/views/template.ecr
+        
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Set up build timestamp
+      run: echo "timestamp=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+    - name: Build and push alpine docker image
+      id: docker_build_new
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./Dockerfile.new
+        build-args: |
+            SENTRY_DSN=$SENTRY_DSN
+            release=1
+        platforms: linux/amd64,linux/arm64/v8
+        push: true
+        tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.timestamp }}
+
+    - name: Build and push official crystal docker image
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        build-args: |
+            SENTRY_DSN=$SENTRY_DSN
+            release=1
+        file: ./Dockerfile
+        push: true
+        tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.timestamp }}

@@ -1,0 +1,372 @@
+From 4968e2bbe6df1c3b87397d64e14b22a78e2c581a Mon Sep 17 00:00:00 2001
+From: Andrew Zhao <azhao12345@users.noreply.github.com>
+Date: Sat, 1 May 2021 13:09:57 -0400
+Subject: [PATCH] limit feeds and delete materialized views rebased by unixfox
+
+---
+ config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
+ config/sql/channel_videos.sql                |  8 +--
+ docker-compose.yml                           |  1 -
+ kubernetes/values.yaml                       |  1 -
+ src/invidious.cr                             | 14 ----
+ src/invidious/helpers/helpers.cr             |  1 -
+ src/invidious/jobs/refresh_feeds_job.cr      | 75 --------------------
+ src/invidious/routes/login.cr                |  3 -
+ src/invidious/routes/search.cr               |  2 +
+ src/invidious/search.cr                      | 19 ++---
+ src/invidious/users.cr                       | 51 ++++++-------
+ 11 files changed, 41 insertions(+), 140 deletions(-)
+ create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
+ delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
+
+diff --git a/config/migrate-scripts/migrate-db-8bc91ce.sh b/config/migrate-scripts/migrate-db-8bc91ce.sh
+new file mode 100644
+index 000000000..04388175e
+--- /dev/null
++++ b/config/migrate-scripts/migrate-db-8bc91ce.sh
+@@ -0,0 +1,6 @@
++CREATE INDEX channel_videos_ucid_published_idx
++  ON public.channel_videos
++  USING btree
++  (ucid COLLATE pg_catalog."default", published);
++
++DROP INDEX channel_videos_ucid_idx;
+\ No newline at end of file
+diff --git a/config/sql/channel_videos.sql b/config/sql/channel_videos.sql
+index cd4e0ffdb..f2ac4876c 100644
+--- a/config/sql/channel_videos.sql
++++ b/config/sql/channel_videos.sql
+@@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS public.channel_videos
+ 
+ GRANT ALL ON TABLE public.channel_videos TO current_user;
+ 
+--- Index: public.channel_videos_ucid_idx
++-- Index: public.channel_videos_ucid_published_idx
+ 
+--- DROP INDEX public.channel_videos_ucid_idx;
++-- DROP INDEX public.channel_videos_ucid_published_idx;
+ 
+-CREATE INDEX IF NOT EXISTS channel_videos_ucid_idx
++CREATE INDEX IF NOT EXISTS channel_videos_ucid_published_idx
+   ON public.channel_videos
+   USING btree
+-  (ucid COLLATE pg_catalog."default");
++  (ucid COLLATE pg_catalog."default", published);
+ 
+diff --git a/docker-compose.yml b/docker-compose.yml
+index b94f98137..2da5755f2 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -25,7 +25,6 @@ services:
+       INVIDIOUS_CONFIG: |
+         channel_threads: 1
+         check_tables: true
+-        feed_threads: 1
+         db:
+           user: kemal
+           password: kemal
+diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
+index f241970c9..e8792ca6f 100644
+--- a/kubernetes/values.yaml
++++ b/kubernetes/values.yaml
+@@ -44,7 +44,6 @@ postgresql:
+ # Adapted from ../config/config.yml
+ config:
+   channel_threads: 1
+-  feed_threads: 1
+   db:
+     user: kemal
+     password: kemal
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 9e67e216a..15a3d16d5 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -80,14 +80,6 @@ Kemal.config.extra_options do |parser|
+       exit
+     end
+   end
+-  parser.on("-f THREADS", "--feed-threads=THREADS", "Number of threads for refreshing feeds (default: #{CONFIG.feed_threads})") do |number|
+-    begin
+-      CONFIG.feed_threads = number.to_i
+-    rescue ex
+-      puts "THREADS must be integer"
+-      exit
+-    end
+-  end
+   parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
+     CONFIG.output = output
+   end
+@@ -132,10 +124,6 @@ if CONFIG.channel_threads > 0
+   Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
+ end
+ 
+-if CONFIG.feed_threads > 0
+-  Invidious::Jobs.register Invidious::Jobs::RefreshFeedsJob.new(PG_DB)
+-end
+-
+ DECRYPT_FUNCTION = DecryptFunction.new(CONFIG.decrypt_polling)
+ if CONFIG.decrypt_polling
+   Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
+@@ -1005,10 +993,8 @@ post "/delete_account" do |env|
+     next error_template(400, ex)
+   end
+ 
+-  view_name = "subscriptions_#{sha256(user.email)}"
+   PG_DB.exec("DELETE FROM users * WHERE email = $1", user.email)
+   PG_DB.exec("DELETE FROM session_ids * WHERE email = $1", user.email)
+-  PG_DB.exec("DROP MATERIALIZED VIEW #{view_name}")
+ 
+   env.request.cookies.each do |cookie|
+     cookie.expires = Time.utc(1990, 1, 1)
+diff --git a/src/invidious/helpers/helpers.cr b/src/invidious/helpers/helpers.cr
+index 99adcd304..81eb4c050 100644
+--- a/src/invidious/helpers/helpers.cr
++++ b/src/invidious/helpers/helpers.cr
+@@ -69,7 +69,6 @@ class Config
+   include YAML::Serializable
+ 
+   property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
+-  property feed_threads : Int32 = 1              # Number of threads to use for updating feeds
+   property output : String = "STDOUT"            # Log file path or STDOUT
+   property log_level : LogLevel = LogLevel::Info # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
+   property db : DBConfig? = nil                  # Database configuration with separate parameters (username, hostname, etc)
+diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
+deleted file mode 100644
+index 926c27fa6..000000000
+--- a/src/invidious/jobs/refresh_feeds_job.cr
++++ /dev/null
+@@ -1,75 +0,0 @@
+-class Invidious::Jobs::RefreshFeedsJob < Invidious::Jobs::BaseJob
+-  private getter db : DB::Database
+-
+-  def initialize(@db)
+-  end
+-
+-  def begin
+-    max_fibers = CONFIG.feed_threads
+-    active_fibers = 0
+-    active_channel = Channel(Bool).new
+-
+-    loop do
+-      db.query("SELECT email FROM users WHERE feed_needs_update = true OR feed_needs_update IS NULL") do |rs|
+-        rs.each do
+-          email = rs.read(String)
+-          view_name = "subscriptions_#{sha256(email)}"
+-
+-          if active_fibers >= max_fibers
+-            if active_channel.receive
+-              active_fibers -= 1
+-            end
+-          end
+-
+-          active_fibers += 1
+-          spawn do
+-            begin
+-              # Drop outdated views
+-              column_array = get_column_array(db, view_name)
+-              ChannelVideo.type_array.each_with_index do |name, i|
+-                if name != column_array[i]?
+-                  LOGGER.info("RefreshFeedsJob: DROP MATERIALIZED VIEW #{view_name}")
+-                  db.exec("DROP MATERIALIZED VIEW #{view_name}")
+-                  raise "view does not exist"
+-                end
+-              end
+-
+-              if !db.query_one("SELECT pg_get_viewdef('#{view_name}')", as: String).includes? "WHERE ((cv.ucid = ANY (u.subscriptions))"
+-                LOGGER.info("RefreshFeedsJob: Materialized view #{view_name} is out-of-date, recreating...")
+-                db.exec("DROP MATERIALIZED VIEW #{view_name}")
+-              end
+-
+-              db.exec("REFRESH MATERIALIZED VIEW #{view_name}")
+-              db.exec("UPDATE users SET feed_needs_update = false WHERE email = $1", email)
+-            rescue ex
+-              # Rename old views
+-              begin
+-                legacy_view_name = "subscriptions_#{sha256(email)[0..7]}"
+-
+-                db.exec("SELECT * FROM #{legacy_view_name} LIMIT 0")
+-                LOGGER.info("RefreshFeedsJob: RENAME MATERIALIZED VIEW #{legacy_view_name}")
+-                db.exec("ALTER MATERIALIZED VIEW #{legacy_view_name} RENAME TO #{view_name}")
+-              rescue ex
+-                begin
+-                  # While iterating through, we may have an email stored from a deleted account
+-                  if db.query_one?("SELECT true FROM users WHERE email = $1", email, as: Bool)
+-                    LOGGER.info("RefreshFeedsJob: CREATE #{view_name}")
+-                    db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(email)}")
+-                    db.exec("UPDATE users SET feed_needs_update = false WHERE email = $1", email)
+-                  end
+-                rescue ex
+-                  LOGGER.error("RefreshFeedJobs: REFRESH #{email} : #{ex.message}")
+-                end
+-              end
+-            end
+-
+-            active_channel.send(true)
+-          end
+-        end
+-      end
+-
+-      sleep 5.seconds
+-      Fiber.yield
+-    end
+-  end
+-end
+diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
+index e7aef289f..b9787ee2c 100644
+--- a/src/invidious/routes/login.cr
++++ b/src/invidious/routes/login.cr
+@@ -451,9 +451,6 @@ module Invidious::Routes::Login
+         PG_DB.exec("INSERT INTO users VALUES (#{args})", args: user_array)
+         PG_DB.exec("INSERT INTO session_ids VALUES ($1, $2, $3)", sid, email, Time.utc)
+ 
+-        view_name = "subscriptions_#{sha256(user.email)}"
+-        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-
+         if Kemal.config.ssl || CONFIG.https_only
+           secure = true
+         else
+diff --git a/src/invidious/routes/search.cr b/src/invidious/routes/search.cr
+index 3f1e219f2..cd40d3913 100644
+--- a/src/invidious/routes/search.cr
++++ b/src/invidious/routes/search.cr
+@@ -53,6 +53,8 @@ module Invidious::Routes::Search
+ 
+       user = env.get? "user"
+ 
++      user = user ? user.as(User) : nil
++
+       begin
+         search_query, count, videos, operators = process_search_query(query, page, user, region: region)
+       rescue ex
+diff --git a/src/invidious/search.cr b/src/invidious/search.cr
+index d95d802ea..93197b6f0 100644
+--- a/src/invidious/search.cr
++++ b/src/invidious/search.cr
+@@ -170,11 +170,6 @@ def produce_channel_search_continuation(ucid, query, page)
+ end
+ 
+ def process_search_query(query, page, user, region)
+-  if user
+-    user = user.as(User)
+-    view_name = "subscriptions_#{sha256(user.email)}"
+-  end
+-
+   channel = nil
+   content_type = "all"
+   date = ""
+@@ -212,14 +207,14 @@ def process_search_query(query, page, user, region)
+   if channel
+     count, items = channel_search(search_query, page, channel)
+   elsif subscriptions
+-    if view_name
++    if user
+       items = PG_DB.query_all("SELECT id,title,published,updated,ucid,author,length_seconds FROM (
+-      SELECT *,
+-      to_tsvector(#{view_name}.title) ||
+-      to_tsvector(#{view_name}.author)
+-      as document
+-      FROM #{view_name}
+-      ) v_search WHERE v_search.document @@ plainto_tsquery($1) LIMIT 20 OFFSET $2;", search_query, (page - 1) * 20, as: ChannelVideo)
++        SELECT cv.*, to_tsvector(cv.title) || to_tsvector(cv.author) AS document
++        FROM channel_videos cv
++        JOIN users ON cv.ucid = any(users.subscriptions)
++        WHERE users.email = $1 AND published > now() - interval '1 month'
++        ORDER BY published
++      ) v_search WHERE v_search.document @@ plainto_tsquery($2) LIMIT 20 OFFSET $3;", user.email, search_query, (page - 1) * 20, as: ChannelVideo)
+       count = items.size
+     else
+       items = [] of ChannelVideo
+diff --git a/src/invidious/users.cr b/src/invidious/users.cr
+index aff76b536..b35d07b5f 100644
+--- a/src/invidious/users.cr
++++ b/src/invidious/users.cr
+@@ -302,12 +302,6 @@ def get_user(sid, headers, db, refresh = true)
+ 
+       db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
+       ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
+-
+-      begin
+-        view_name = "subscriptions_#{sha256(user.email)}"
+-        db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-      rescue ex
+-      end
+     end
+   else
+     user, sid = fetch_user(sid, headers, db)
+@@ -320,12 +314,6 @@ def get_user(sid, headers, db, refresh = true)
+ 
+     db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
+     ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
+-
+-    begin
+-      view_name = "subscriptions_#{sha256(user.email)}"
+-      db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-    rescue ex
+-    end
+   end
+ 
+   return user, sid
+@@ -496,7 +484,6 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+ 
+   notifications = db.query_one("SELECT notifications FROM users WHERE email = $1", user.email,
+     as: Array(String))
+-  view_name = "subscriptions_#{sha256(user.email)}"
+ 
+   if user.preferences.notifications_only && !notifications.empty?
+     # Only show notifications
+@@ -525,33 +512,39 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+         # Show latest video from a channel that a user hasn't watched
+         # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
+ 
+-        if user.watched.empty?
+-          values = "'{}'"
+-        else
+-          values = "VALUES #{user.watched.map { |id| %(('#{id}')) }.join(",")}"
+-        end
+-        videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} WHERE NOT id = ANY (#{values}) ORDER BY ucid, published DESC", as: ChannelVideo)
++        # "SELECT cv.* FROM channel_videos cv JOIN users ON cv.ucid = any(users.subscriptions) WHERE users.email = $1 AND published > now() - interval '1 month' ORDER BY published DESC"
++        # "SELECT DISTINCT ON (cv.ucid) cv.* FROM channel_videos cv JOIN users ON cv.ucid = any(users.subscriptions) WHERE users.email = ? AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' ORDER BY ucid, published DESC"
++        videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
++                                 "FROM channel_videos cv " \
++                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                 "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
++                                 "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
+       else
+         # Show latest video from each channel
+ 
+-        videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} ORDER BY ucid, published DESC", as: ChannelVideo)
++        videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
++                                 "FROM channel_videos cv " \
++                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                 "WHERE users.email = $1 AND published > now() - interval '1 month' " \
++                                 "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
+       end
+ 
+       videos.sort_by! { |video| video.published }.reverse!
+     else
+       if user.preferences.unseen_only
+         # Only show unwatched
+-
+-        if user.watched.empty?
+-          values = "'{}'"
+-        else
+-          values = "VALUES #{user.watched.map { |id| %(('#{id}')) }.join(",")}"
+-        end
+-        videos = PG_DB.query_all("SELECT * FROM #{view_name} WHERE NOT id = ANY (#{values}) ORDER BY published DESC LIMIT $1 OFFSET $2", limit, offset, as: ChannelVideo)
++        videos = PG_DB.query_all("SELECT cv.* " \
++                                 "FROM channel_videos cv " \
++                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                 "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
++                                 "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
+       else
+         # Sort subscriptions as normal
+-
+-        videos = PG_DB.query_all("SELECT * FROM #{view_name} ORDER BY published DESC LIMIT $1 OFFSET $2", limit, offset, as: ChannelVideo)
++        videos = PG_DB.query_all("SELECT cv.* " \
++                                 "FROM channel_videos cv " \
++                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                 "WHERE users.email = $1 AND published > now() - interval '1 month' " \
++                                 "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
+       end
+     end
+ 
