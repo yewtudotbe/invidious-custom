@@ -1,0 +1,340 @@
+From 97dc90ae792c3ad876dd5d60c79fb33c23706096 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Sat, 2 Oct 2021 11:51:15 -0700
+Subject: [PATCH 1/4] Only use /redirect when automatically redirecting
+
+---
+ src/invidious/routes/misc.cr                  |  2 +-
+ src/invidious/views/channel.ecr               |  6 +++-
+ src/invidious/views/community.ecr             |  6 +++-
+ src/invidious/views/components/item.ecr       | 31 +++----------------
+ .../components/video-context-buttons.ecr      | 21 +++++++++++++
+ src/invidious/views/playlist.ecr              | 13 ++++++--
+ src/invidious/views/playlists.ecr             |  6 +++-
+ src/invidious/views/preferences.ecr           |  2 +-
+ src/invidious/views/watch.ecr                 |  4 +++
+ 9 files changed, 57 insertions(+), 34 deletions(-)
+ create mode 100644 src/invidious/views/components/video-context-buttons.ecr
+
+diff --git a/src/invidious/routes/misc.cr b/src/invidious/routes/misc.cr
+index 0e6356d0e..94d542836 100644
+--- a/src/invidious/routes/misc.cr
++++ b/src/invidious/routes/misc.cr
+@@ -42,7 +42,7 @@ module Invidious::Routes::Misc
+     referer = get_referer(env)
+ 
+     if !env.get("preferences").as(Preferences).automatic_instance_redirect
+-      return env.redirect("https://redirect.invidious.io#{referer}")
++      return env.redirect("https://redirect.invidious.io/#{referer}")
+     end
+ 
+     instance_url = fetch_random_instance
+diff --git a/src/invidious/views/channel.ecr b/src/invidious/views/channel.ecr
+index 7f797e376..66f1ae10e 100644
+--- a/src/invidious/views/channel.ecr
++++ b/src/invidious/views/channel.ecr
+@@ -45,7 +45,11 @@
+     <div class="pure-u-1-3">
+         <a href="https://www.youtube.com/channel/<%= ucid %>"><%= translate(locale, "View channel on YouTube") %></a>
+         <div class="pure-u-1 pure-md-1-3">
+-            <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
++                <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% else %>
++                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% end %>
+         </div>
+         <% if !channel.auto_generated %>
+             <div class="pure-u-1 pure-md-1-3">
+diff --git a/src/invidious/views/community.ecr b/src/invidious/views/community.ecr
+index 15d8ed1e0..17bc4f89b 100644
+--- a/src/invidious/views/community.ecr
++++ b/src/invidious/views/community.ecr
+@@ -44,7 +44,11 @@
+     <div class="pure-u-1-3">
+         <a href="https://www.youtube.com/channel/<%= channel.ucid %>/community"><%= translate(locale, "View channel on YouTube") %></a>
+         <div class="pure-u-1 pure-md-1-3">
+-            <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
++                <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% else %>
++                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% end %>
+         </div>
+         <% if !channel.auto_generated %>
+             <div class="pure-u-1 pure-md-1-3">
+diff --git a/src/invidious/views/components/item.ecr b/src/invidious/views/components/item.ecr
+index d084bfd4d..1852d3659 100644
+--- a/src/invidious/views/components/item.ecr
++++ b/src/invidious/views/components/item.ecr
+@@ -79,19 +79,8 @@
+                 <div class="flex-left"><a href="/channel/<%= item.ucid %>">
+                     <p class="channel-name" dir="auto"><%= HTML.escape(item.author) %></p>
+                 </a></div>
+-                <div class="flex-right">
+-                    <div class="icon-buttons">
+-                        <a title="<%=translate(locale, "Watch on YouTube")%>" href="https://www.youtube.com/watch?v=<%= item.id %>&list=<%= item.plid %>">
+-                            <i class="icon ion-logo-youtube"></i>
+-                        </a>
+-                        <a title="<%=translate(locale, "Audio mode")%>" href="/watch?v=<%= item.id %>&list=<%= item.plid %>&amp;listen=1">
+-                            <i class="icon ion-md-headset"></i>
+-                        </a>
+-                        <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="/redirect?referer=<%=URI.encode_www_form("watch?v=#{item.id}&list=#{item.plid}")%>">
+-                            <i class="icon ion-md-jet"></i>
+-                        </a>
+-                    </div>
+-                </div>
++                <% endpoint_params = "?v=#{item.id}&list=#{item.plid}" %>
++                <%= rendered "components/video-context-buttons" %>
+             </div>
+ 
+             <div class="video-card-row flexible">
+@@ -155,19 +144,9 @@
+                 <div class="flex-left"><a href="/channel/<%= item.ucid %>">
+                     <p class="channel-name" dir="auto"><%= HTML.escape(item.author) %></p>
+                 </a></div>
+-                <div class="flex-right">
+-                    <div class="icon-buttons">
+-                        <a title="<%=translate(locale, "Watch on YouTube")%>" href="https://www.youtube.com/watch?v=<%= item.id %>">
+-                            <i class="icon ion-logo-youtube"></i>
+-                        </a>
+-                        <a title="<%=translate(locale, "Audio mode")%>" href="/watch?v=<%= item.id %>&amp;listen=1">
+-                            <i class="icon ion-md-headset"></i>
+-                        </a>
+-                        <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="/redirect?referer=<%=URI.encode_www_form("watch?v=#{item.id}")%>">
+-                            <i class="icon ion-md-jet"></i>
+-                        </a>
+-                    </div>
+-                </div>
++
++                <% endpoint_params = "?v=#{item.id}" %>
++                <%= rendered "components/video-context-buttons" %>
+             </div>
+ 
+             <div class="video-card-row flexible">
+diff --git a/src/invidious/views/components/video-context-buttons.ecr b/src/invidious/views/components/video-context-buttons.ecr
+new file mode 100644
+index 000000000..062c3de00
+--- /dev/null
++++ b/src/invidious/views/components/video-context-buttons.ecr
+@@ -0,0 +1,21 @@
++<div class="flex-right">
++    <div class="icon-buttons">
++        <a title="<%=translate(locale, "Watch on YouTube")%>" href="https://www.youtube.com/watch<%=endpoint_params%>">
++            <i class="icon ion-logo-youtube"></i>
++        </a>
++        <a title="<%=translate(locale, "Audio mode")%>" href="/watch<%=endpoint_params%>&listen=1">
++            <i class="icon ion-md-headset"></i>
++        </a>
++        
++        <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
++            <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="/redirect?referer=%2Fwatch<%=endpoint_params%>">
++                <i class="icon ion-md-jet"></i>
++            </a>
++        <% else %>
++            <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="https://redirect.invidious.io/watch<%=endpoint_params%>">
++                <i class="icon ion-md-jet"></i>
++            </a>
++        <% end %>
++
++    </div>
++</div>
+\ No newline at end of file
+diff --git a/src/invidious/views/playlist.ecr b/src/invidious/views/playlist.ecr
+index 12f93a72b..4c23ad986 100644
+--- a/src/invidious/views/playlist.ecr
++++ b/src/invidious/views/playlist.ecr
+@@ -41,9 +41,16 @@
+                         <%= translate(locale, "View playlist on YouTube") %>
+                     </a>
+                     <span> | </span>
+-                    <a href="/redirect?referer=<%= env.get?("current_page") %>">
+-                      <%= translate(locale, "Switch Invidious Instance") %>
+-                    </a>
++
++                    <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
++                        <a href="/redirect?referer=<%= env.get?("current_page") %>">
++                            <%= translate(locale, "Switch Invidious Instance") %>
++                        </a>
++                    <% else %>
++                        <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>">
++                            <%= translate(locale, "Switch Invidious Instance") %>
++                        </a>
++                    <% end %>
+             </div>
+         <% end %>
+     </div>
+diff --git a/src/invidious/views/playlists.ecr b/src/invidious/views/playlists.ecr
+index 1245256fe..74890f5a1 100644
+--- a/src/invidious/views/playlists.ecr
++++ b/src/invidious/views/playlists.ecr
+@@ -47,7 +47,11 @@
+         </div>
+ 
+         <div class="pure-u-1 pure-md-1-3">
+-            <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
++                <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% else %>
++                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% end %>
+         </div>
+ 
+         <div class="pure-u-1 pure-md-1-3">
+diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
+index 401c15ea6..5999169ad 100644
+--- a/src/invidious/views/preferences.ecr
++++ b/src/invidious/views/preferences.ecr
+@@ -186,7 +186,7 @@
+ 
+             <div class="pure-control-group">
+                 <label for="automatic_instance_redirect"><%= translate(locale, "Automaticatic instance redirection (fallback to redirect.invidious.io): ") %></label>
+-                <input name="automatic_instance_redirect" id="automatic_instance_redirect" type="checkbox" <% if preferences.automatic_instance_redirect %>checked<% end %>>
++                <input name="automatic_instance_redirect" id="automatic_instance_redirect" type="checkbox" <% if env.get("preferences").as(Preferences).automatic_instance_redirect %>checked<% end %>>
+             </div>
+ 
+             <% if env.get? "user" %>
+diff --git a/src/invidious/views/watch.ecr b/src/invidious/views/watch.ecr
+index 68e7eb801..845b01177 100644
+--- a/src/invidious/views/watch.ecr
++++ b/src/invidious/views/watch.ecr
+@@ -116,7 +116,11 @@ we're going to need to do it here in order to allow for translations.
+                 (<a href="https://www.youtube.com/embed/<%= video.id %>"><%= translate(locale, "Embed") %></a>)
+             </span>
+             <p id="watch-on-another-invidious-instance">
++            <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% else %>
++                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++            <% end %>
+             </p>
+             <p id="embed-link">
+                 <a href="<%= embed_link %>"><%= translate(locale, "Embed Link") %></a>
+
+From 67cd9c0dd96b35d89cd73a6b93c510cc341ccbb5 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Sat, 2 Oct 2021 12:25:22 -0700
+Subject: [PATCH 2/4] Remove unneeded redirect.invidious.io code in /redirect
+
+---
+ src/invidious/routes/misc.cr | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/src/invidious/routes/misc.cr b/src/invidious/routes/misc.cr
+index 94d542836..3ea4c2727 100644
+--- a/src/invidious/routes/misc.cr
++++ b/src/invidious/routes/misc.cr
+@@ -40,11 +40,6 @@ module Invidious::Routes::Misc
+ 
+   def self.cross_instance_redirect(env)
+     referer = get_referer(env)
+-
+-    if !env.get("preferences").as(Preferences).automatic_instance_redirect
+-      return env.redirect("https://redirect.invidious.io/#{referer}")
+-    end
+-
+     instance_url = fetch_random_instance
+     env.redirect "https://#{instance_url}#{referer}"
+   end
+
+From 2c4a30de554f6405937ef8fee993aa79140f293c Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 15 Oct 2021 07:45:36 -0700
+Subject: [PATCH 3/4] Rebase error
+
+---
+ src/invidious/views/components/video-context-buttons.ecr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/views/components/video-context-buttons.ecr b/src/invidious/views/components/video-context-buttons.ecr
+index 062c3de00..daa107f0e 100644
+--- a/src/invidious/views/components/video-context-buttons.ecr
++++ b/src/invidious/views/components/video-context-buttons.ecr
+@@ -8,7 +8,7 @@
+         </a>
+         
+         <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+-            <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="/redirect?referer=%2Fwatch<%=endpoint_params%>">
++            <a title="<%=translate(locale, "Switch Invidious Instance")%>" href="/redirect?referer=%2Fwatch<%=URI.encode_www_form(endpoint_params)%>">
+                 <i class="icon ion-md-jet"></i>
+             </a>
+         <% else %>
+
+From 31fd593e93c6e10957001377c8b04add9436e25a Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 15 Oct 2021 14:40:59 -0700
+Subject: [PATCH 4/4] Use env.request.resource for instance switch link
+
+---
+ src/invidious/views/channel.ecr   | 2 +-
+ src/invidious/views/community.ecr | 2 +-
+ src/invidious/views/playlist.ecr  | 2 +-
+ src/invidious/views/playlists.ecr | 2 +-
+ src/invidious/views/watch.ecr     | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/invidious/views/channel.ecr b/src/invidious/views/channel.ecr
+index 66f1ae10e..40b553a9c 100644
+--- a/src/invidious/views/channel.ecr
++++ b/src/invidious/views/channel.ecr
+@@ -48,7 +48,7 @@
+             <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% else %>
+-                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++                <a href="https://redirect.invidious.io<%= env.request.path %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% end %>
+         </div>
+         <% if !channel.auto_generated %>
+diff --git a/src/invidious/views/community.ecr b/src/invidious/views/community.ecr
+index 17bc4f89b..f0add06bf 100644
+--- a/src/invidious/views/community.ecr
++++ b/src/invidious/views/community.ecr
+@@ -47,7 +47,7 @@
+             <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% else %>
+-                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++                <a href="https://redirect.invidious.io<%= env.request.resource %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% end %>
+         </div>
+         <% if !channel.auto_generated %>
+diff --git a/src/invidious/views/playlist.ecr b/src/invidious/views/playlist.ecr
+index 4c23ad986..d0518de77 100644
+--- a/src/invidious/views/playlist.ecr
++++ b/src/invidious/views/playlist.ecr
+@@ -47,7 +47,7 @@
+                             <%= translate(locale, "Switch Invidious Instance") %>
+                         </a>
+                     <% else %>
+-                        <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>">
++                        <a href="https://redirect.invidious.io<%= env.request.resource %>">
+                             <%= translate(locale, "Switch Invidious Instance") %>
+                         </a>
+                     <% end %>
+diff --git a/src/invidious/views/playlists.ecr b/src/invidious/views/playlists.ecr
+index 74890f5a1..12dba088f 100644
+--- a/src/invidious/views/playlists.ecr
++++ b/src/invidious/views/playlists.ecr
+@@ -50,7 +50,7 @@
+             <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% else %>
+-                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++                <a href="https://redirect.invidious.io<%= env.request.resource %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% end %>
+         </div>
+ 
+diff --git a/src/invidious/views/watch.ecr b/src/invidious/views/watch.ecr
+index 845b01177..6018e5c2d 100644
+--- a/src/invidious/views/watch.ecr
++++ b/src/invidious/views/watch.ecr
+@@ -119,7 +119,7 @@ we're going to need to do it here in order to allow for translations.
+             <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% else %>
+-                <a href="https://redirect.invidious.io/<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++                <a href="https://redirect.invidious.io<%= env.request.resource %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% end %>
+             </p>
+             <p id="embed-link">
