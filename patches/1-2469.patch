@@ -1,7 +1,8 @@
 From 4968e2bbe6df1c3b87397d64e14b22a78e2c581a Mon Sep 17 00:00:00 2001
 From: Andrew Zhao <azhao12345@users.noreply.github.com>
 Date: Sat, 1 May 2021 13:09:57 -0400
-Subject: [PATCH] limit feeds and delete materialized views rebased by unixfox
+Subject: [PATCH 1/2] limit feeds and delete materialized views rebased by
+ unixfox
 
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
@@ -370,3 +371,25 @@ index aff76b536..b35d07b5f 100644
        end
      end
  
+
+From eb086a3afa389910331d9662eb4b7bed1f779247 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Tue, 19 Oct 2021 07:06:08 +0000
+Subject: [PATCH 2/2] remove property feed_threads
+
+---
+ src/invidious/config.cr | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index e2bc57225..daf0143d1 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -55,7 +55,6 @@ class Config
+   include YAML::Serializable
+ 
+   property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
+-  property feed_threads : Int32 = 1              # Number of threads to use for updating feeds
+   property output : String = "STDOUT"            # Log file path or STDOUT
+   property log_level : LogLevel = LogLevel::Info # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
+   property db : DBConfig? = nil                  # Database configuration with separate parameters (username, hostname, etc)
