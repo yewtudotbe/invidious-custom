@@ -1,8 +1,7 @@
-From 4968e2bbe6df1c3b87397d64e14b22a78e2c581a Mon Sep 17 00:00:00 2001
-From: Andrew Zhao <azhao12345@users.noreply.github.com>
-Date: Sat, 1 May 2021 13:09:57 -0400
-Subject: [PATCH 1/2] limit feeds and delete materialized views rebased by
- unixfox
+From 80e284ddde1e9474224f16f423223b5f7ebcc4f6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Tue, 19 Oct 2021 07:12:15 +0000
+Subject: [PATCH] limit feeds and delete materialized views
 
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
@@ -10,7 +9,7 @@ Subject: [PATCH 1/2] limit feeds and delete materialized views rebased by
  docker-compose.yml                           |  1 -
  kubernetes/values.yaml                       |  1 -
  src/invidious.cr                             | 14 ----
- src/invidious/helpers/helpers.cr             |  1 -
+ src/invidious/config.cr                      |  1 -
  src/invidious/jobs/refresh_feeds_job.cr      | 75 --------------------
  src/invidious/routes/login.cr                |  3 -
  src/invidious/routes/search.cr               |  2 +
@@ -55,7 +54,7 @@ index cd4e0ffdb..f2ac4876c 100644
 +  (ucid COLLATE pg_catalog."default", published);
  
 diff --git a/docker-compose.yml b/docker-compose.yml
-index b94f98137..2da5755f2 100644
+index ea1d29936..d0db38bc1 100644
 --- a/docker-compose.yml
 +++ b/docker-compose.yml
 @@ -25,7 +25,6 @@ services:
@@ -79,10 +78,10 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 9e67e216a..15a3d16d5 100644
+index 570c33e69..9c82c3f73 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -80,14 +80,6 @@ Kemal.config.extra_options do |parser|
+@@ -82,14 +82,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -97,7 +96,7 @@ index 9e67e216a..15a3d16d5 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -132,10 +124,6 @@ if CONFIG.channel_threads > 0
+@@ -134,10 +126,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -108,7 +107,7 @@ index 9e67e216a..15a3d16d5 100644
  DECRYPT_FUNCTION = DecryptFunction.new(CONFIG.decrypt_polling)
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
-@@ -1005,10 +993,8 @@ post "/delete_account" do |env|
+@@ -1014,10 +1002,8 @@ post "/delete_account" do |env|
      next error_template(400, ex)
    end
  
@@ -119,11 +118,11 @@ index 9e67e216a..15a3d16d5 100644
  
    env.request.cookies.each do |cookie|
      cookie.expires = Time.utc(1990, 1, 1)
-diff --git a/src/invidious/helpers/helpers.cr b/src/invidious/helpers/helpers.cr
-index 99adcd304..81eb4c050 100644
---- a/src/invidious/helpers/helpers.cr
-+++ b/src/invidious/helpers/helpers.cr
-@@ -69,7 +69,6 @@ class Config
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index e2bc57225..daf0143d1 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -55,7 +55,6 @@ class Config
    include YAML::Serializable
  
    property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
@@ -278,10 +277,10 @@ index d95d802ea..93197b6f0 100644
      else
        items = [] of ChannelVideo
 diff --git a/src/invidious/users.cr b/src/invidious/users.cr
-index aff76b536..b35d07b5f 100644
+index 8ea7bd4a9..dc08a80ba 100644
 --- a/src/invidious/users.cr
 +++ b/src/invidious/users.cr
-@@ -302,12 +302,6 @@ def get_user(sid, headers, db, refresh = true)
+@@ -44,12 +44,6 @@ def get_user(sid, headers, db, refresh = true)
  
        db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
        ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
@@ -294,7 +293,7 @@ index aff76b536..b35d07b5f 100644
      end
    else
      user, sid = fetch_user(sid, headers, db)
-@@ -320,12 +314,6 @@ def get_user(sid, headers, db, refresh = true)
+@@ -62,12 +56,6 @@ def get_user(sid, headers, db, refresh = true)
  
      db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
      ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
@@ -307,7 +306,7 @@ index aff76b536..b35d07b5f 100644
    end
  
    return user, sid
-@@ -496,7 +484,6 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+@@ -238,7 +226,6 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
  
    notifications = db.query_one("SELECT notifications FROM users WHERE email = $1", user.email,
      as: Array(String))
@@ -315,7 +314,7 @@ index aff76b536..b35d07b5f 100644
  
    if user.preferences.notifications_only && !notifications.empty?
      # Only show notifications
-@@ -525,33 +512,39 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+@@ -267,33 +254,39 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
          # Show latest video from a channel that a user hasn't watched
          # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
  
@@ -371,25 +370,3 @@ index aff76b536..b35d07b5f 100644
        end
      end
  
-
-From eb086a3afa389910331d9662eb4b7bed1f779247 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
-Date: Tue, 19 Oct 2021 07:06:08 +0000
-Subject: [PATCH 2/2] remove property feed_threads
-
----
- src/invidious/config.cr | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index e2bc57225..daf0143d1 100644
---- a/src/invidious/config.cr
-+++ b/src/invidious/config.cr
-@@ -55,7 +55,6 @@ class Config
-   include YAML::Serializable
- 
-   property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
--  property feed_threads : Int32 = 1              # Number of threads to use for updating feeds
-   property output : String = "STDOUT"            # Log file path or STDOUT
-   property log_level : LogLevel = LogLevel::Info # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
-   property db : DBConfig? = nil                  # Database configuration with separate parameters (username, hostname, etc)
