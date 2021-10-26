@@ -1,7 +1,7 @@
 From 97dc90ae792c3ad876dd5d60c79fb33c23706096 Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sat, 2 Oct 2021 11:51:15 -0700
-Subject: [PATCH 1/4] Only use /redirect when automatically redirecting
+Subject: [PATCH 1/5] Only use /redirect when automatically redirecting
 
 ---
  src/invidious/routes/misc.cr                  |  2 +-
@@ -214,7 +214,7 @@ index 68e7eb801..845b01177 100644
 From 67cd9c0dd96b35d89cd73a6b93c510cc341ccbb5 Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sat, 2 Oct 2021 12:25:22 -0700
-Subject: [PATCH 2/4] Remove unneeded redirect.invidious.io code in /redirect
+Subject: [PATCH 2/5] Remove unneeded redirect.invidious.io code in /redirect
 
 ---
  src/invidious/routes/misc.cr | 5 -----
@@ -240,7 +240,7 @@ index 94d542836..3ea4c2727 100644
 From 2c4a30de554f6405937ef8fee993aa79140f293c Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Fri, 15 Oct 2021 07:45:36 -0700
-Subject: [PATCH 3/4] Rebase error
+Subject: [PATCH 3/5] Rebase error
 
 ---
  src/invidious/views/components/video-context-buttons.ecr | 2 +-
@@ -263,7 +263,7 @@ index 062c3de00..daa107f0e 100644
 From 31fd593e93c6e10957001377c8b04add9436e25a Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Fri, 15 Oct 2021 14:40:59 -0700
-Subject: [PATCH 4/4] Use env.request.resource for instance switch link
+Subject: [PATCH 4/5] Use env.request.resource for instance switch link
 
 ---
  src/invidious/views/channel.ecr   | 2 +-
@@ -338,3 +338,26 @@ index 845b01177..6018e5c2d 100644
              <% end %>
              </p>
              <p id="embed-link">
+
+From de0c4a7a56191d5fbbefa8009fd541edd1805c25 Mon Sep 17 00:00:00 2001
+From: syeopite <70992037+syeopite@users.noreply.github.com>
+Date: Tue, 26 Oct 2021 12:16:27 +0000
+Subject: [PATCH 5/5] Use env.request.resource not .path for redirect
+
+---
+ src/invidious/views/channel.ecr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/views/channel.ecr b/src/invidious/views/channel.ecr
+index 40b553a9c..1ba62d53d 100644
+--- a/src/invidious/views/channel.ecr
++++ b/src/invidious/views/channel.ecr
+@@ -48,7 +48,7 @@
+             <% if env.get("preferences").as(Preferences).automatic_instance_redirect%>
+                 <a href="/redirect?referer=<%= env.get?("current_page") %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% else %>
+-                <a href="https://redirect.invidious.io<%= env.request.path %>"><%= translate(locale, "Switch Invidious Instance") %></a>
++                <a href="https://redirect.invidious.io<%= env.request.resource %>"><%= translate(locale, "Switch Invidious Instance") %></a>
+             <% end %>
+         </div>
+         <% if !channel.auto_generated %>
