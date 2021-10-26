@@ -1,0 +1,241 @@
+From 85c914fe8a7003c15090f7f90bcc6100d2af6052 Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Mon, 25 Oct 2021 19:50:17 -0400
+Subject: [PATCH 1/2] Add remember_position field to the Preferences and
+ VideoPreferences structs, and add a checkbox in the preferences page to
+ toggle it
+
+---
+ src/invidious/config.cr             | 1 +
+ src/invidious/routes/preferences.cr | 5 +++++
+ src/invidious/user/preferences.cr   | 1 +
+ src/invidious/videos.cr             | 6 ++++++
+ src/invidious/views/preferences.ecr | 5 +++++
+ 5 files changed, 18 insertions(+)
+
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index e2bc57225..52b473f00 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -41,6 +41,7 @@ struct ConfigPreferences
+   property volume : Int32 = 100
+   property vr_mode : Bool = true
+   property show_nick : Bool = true
++  property remember_position : Bool = false
+ 
+   def to_tuple
+     {% begin %}
+diff --git a/src/invidious/routes/preferences.cr b/src/invidious/routes/preferences.cr
+index ae5407dcc..e2254f4d1 100644
+--- a/src/invidious/routes/preferences.cr
++++ b/src/invidious/routes/preferences.cr
+@@ -70,6 +70,10 @@ module Invidious::Routes::PreferencesRoute
+     vr_mode ||= "off"
+     vr_mode = vr_mode == "on"
+ 
++    remember_position = env.params.body["remember_position"]?.try &.as(String)
++    remember_position ||= "off"
++    remember_position = remember_position == "on"
++
+     show_nick = env.params.body["show_nick"]?.try &.as(String)
+     show_nick ||= "off"
+     show_nick = show_nick == "on"
+@@ -162,6 +166,7 @@ module Invidious::Routes::PreferencesRoute
+       extend_desc:                 extend_desc,
+       vr_mode:                     vr_mode,
+       show_nick:                   show_nick,
++      remember_position:           remember_position,
+     }.to_json).to_json
+ 
+     if user = env.get? "user"
+diff --git a/src/invidious/user/preferences.cr b/src/invidious/user/preferences.cr
+index 453a635e6..5e3329949 100644
+--- a/src/invidious/user/preferences.cr
++++ b/src/invidious/user/preferences.cr
+@@ -52,6 +52,7 @@ struct Preferences
+   property video_loop : Bool = CONFIG.default_user_preferences.video_loop
+   property extend_desc : Bool = CONFIG.default_user_preferences.extend_desc
+   property volume : Int32 = CONFIG.default_user_preferences.volume
++  property remember_position : Bool = CONFIG.default_user_preferences.remember_position
+ 
+   module BoolToString
+     def self.to_json(value : String, json : JSON::Builder)
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 0e6bd77c4..a4353fd0f 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -246,6 +246,7 @@ struct VideoPreferences
+   property video_start : Float64 | Int32
+   property volume : Int32
+   property vr_mode : Bool
++  property remember_position : Bool
+ end
+ 
+ struct Video
+@@ -1039,6 +1040,7 @@ def process_video_params(query, preferences)
+   extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+   volume = query["volume"]?.try &.to_i?
+   vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  remember_position = query["remember_position"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+ 
+   if preferences
+     # region ||= preferences.region
+@@ -1059,6 +1061,7 @@ def process_video_params(query, preferences)
+     extend_desc ||= preferences.extend_desc.to_unsafe
+     volume ||= preferences.volume
+     vr_mode ||= preferences.vr_mode.to_unsafe
++    remember_position ||= preferences.remember_position.to_unsafe
+   end
+ 
+   annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
+@@ -1078,6 +1081,7 @@ def process_video_params(query, preferences)
+   extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
+   volume ||= CONFIG.default_user_preferences.volume
+   vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
++  remember_position ||= CONFIG.default_user_preferences.remember_position.to_unsafe
+ 
+   annotations = annotations == 1
+   autoplay = autoplay == 1
+@@ -1089,6 +1093,7 @@ def process_video_params(query, preferences)
+   video_loop = video_loop == 1
+   extend_desc = extend_desc == 1
+   vr_mode = vr_mode == 1
++  remember_position = remember_position == 1
+ 
+   if CONFIG.disabled?("dash") && quality == "dash"
+     quality = "high"
+@@ -1139,6 +1144,7 @@ def process_video_params(query, preferences)
+     video_start:        video_start,
+     volume:             volume,
+     vr_mode:            vr_mode,
++    remember_position:  remember_position,
+   })
+ 
+   return params
+diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
+index 401c15ea6..025e8399f 100644
+--- a/src/invidious/views/preferences.ecr
++++ b/src/invidious/views/preferences.ecr
+@@ -116,6 +116,11 @@
+                 <input name="vr_mode" id="vr_mode" type="checkbox" <% if preferences.vr_mode %>checked<% end %>>
+             </div>
+ 
++            <div class="pure-control-group">
++                <label for="remember_position">Remember the current video time:</label>
++                <input name="remember_position" id="remember_position" type="checkbox" <% if preferences.remember_position %>checked<% end %>>
++            </div>
++
+             <legend><%= translate(locale, "Visual preferences") %></legend>
+ 
+             <div class="pure-control-group">
+
+From baa578033a25d886ca66c813afc859a97dfa5f8f Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Mon, 25 Oct 2021 20:59:36 -0400
+Subject: [PATCH 2/2] Save and load the position for the video using a local
+ storage object, the object is a dictionary, where the key is the video ID,
+ and the value is the time at which the user last left off watching the video.
+ If the user deselected the 'remember video position' checkbox in the
+ preferences this dictionary is cleared
+
+---
+ assets/js/player.js | 72 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index a461c53d6..4c12f1fe8 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -38,6 +38,8 @@ embed_url.searchParams.delete('v');
+ short_url = location.origin + '/' + video_data.id + embed_url.search;
+ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+ 
++var remember_position_key = "remember_position";
++
+ var shareOptions = {
+     socials: ['fbFeed', 'tw', 'reddit', 'email'],
+ 
+@@ -199,6 +201,27 @@ if (video_data.premiere_timestamp && Math.round(new Date() / 1000) < video_data.
+     player.getChild('bigPlayButton').hide();
+ }
+ 
++if (video_data.params.remember_position) {
++    const remeberedTime = get_video_time();
++    let lastUpdated = 0;
++
++    set_seconds_after_start(remeberedTime);
++
++    player.on("timeupdate", e => {
++        const raw = player.currentTime();
++        const time = Math.floor(raw);
++
++        if(lastUpdated !== time) {
++            save_video_time(time);
++            lastUpdated = time;
++        }
++    });
++}
++else {
++    console.log("Removing data for remebered positions");
++    remove_all_video_times();
++}
++
+ if (video_data.params.autoplay) {
+     var bpb = player.getChild('bigPlayButton');
+     bpb.hide();
+@@ -330,6 +353,55 @@ function skip_seconds(delta) {
+     player.currentTime(newTime);
+ }
+ 
++function set_seconds_after_start(delta) {
++    const start = video_data.params.video_start;
++    player.currentTime(start + delta);
++}
++
++function save_video_time(seconds) {
++    const videoId = video_data.id;
++    const all_video_times = get_all_video_times();
++
++    all_video_times[videoId] = seconds;
++
++    set_all_video_times(all_video_times);
++}
++
++function get_video_time() {
++    try {
++        const videoId = video_data.id;
++        const all_video_times = get_all_video_times();
++        const timestamp = all_video_times[videoId];
++
++        return timestamp;
++    }
++    catch {
++        return 0;
++    }
++}
++
++function set_all_video_times(times) {
++    const json = JSON.stringify(times);
++
++    localStorage.setItem(remember_position_key, json);
++}
++
++function get_all_video_times() {
++    try {
++        const raw = localStorage.getItem(remember_position_key);
++        const times = JSON.parse(raw);
++
++        return times || {};
++    }
++    catch {
++        return {};
++    }
++}
++
++function remove_all_video_times() {
++    localStorage.removeItem(remember_position_key);
++}
++
+ function set_time_percent(percent) {
+     const duration = player.duration();
+     const newTime = duration * (percent / 100);
