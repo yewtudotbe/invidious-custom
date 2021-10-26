@@ -61,7 +61,6 @@ jobs:
         context: ./
         file: ./Dockerfile.new
         build-args: |
-            SENTRY_DSN=$SENTRY_DSN
             release=1
         platforms: linux/amd64,linux/arm64/v8
         push: true
@@ -73,7 +72,6 @@ jobs:
       with:
         context: ./
         build-args: |
-            SENTRY_DSN=$SENTRY_DSN
             release=1
         file: ./Dockerfile
         push: true
