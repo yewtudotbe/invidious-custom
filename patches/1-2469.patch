@@ -1,4 +1,4 @@
-From 80e284ddde1e9474224f16f423223b5f7ebcc4f6 Mon Sep 17 00:00:00 2001
+From 71f11be12b9c7038734144906a0fe90c92ba87ce Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -54,7 +54,7 @@ index cd4e0ffdb..f2ac4876c 100644
 +  (ucid COLLATE pg_catalog."default", published);
  
 diff --git a/docker-compose.yml b/docker-compose.yml
-index ea1d29936..d0db38bc1 100644
+index cc62d6e55..a47754b45 100644
 --- a/docker-compose.yml
 +++ b/docker-compose.yml
 @@ -25,7 +25,6 @@ services:
@@ -78,7 +78,7 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 570c33e69..9c82c3f73 100644
+index 21a12ff2e..fe9427d2b 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -82,14 +82,6 @@ Kemal.config.extra_options do |parser|
@@ -119,10 +119,10 @@ index 570c33e69..9c82c3f73 100644
    env.request.cookies.each do |cookie|
      cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index e2bc57225..daf0143d1 100644
+index bacdb4acc..0aedaa99e 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -55,7 +55,6 @@ class Config
+@@ -56,7 +56,6 @@ class Config
    include YAML::Serializable
  
    property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
@@ -212,7 +212,7 @@ index 926c27fa6..000000000
 -  end
 -end
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index e7aef289f..b9787ee2c 100644
+index b719b5716..cb7dea9d2 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
 @@ -451,9 +451,6 @@ module Invidious::Routes::Login
@@ -239,7 +239,7 @@ index 3f1e219f2..cd40d3913 100644
          search_query, count, videos, operators = process_search_query(query, page, user, region: region)
        rescue ex
 diff --git a/src/invidious/search.cr b/src/invidious/search.cr
-index d95d802ea..93197b6f0 100644
+index 2095721c8..db247f00a 100644
 --- a/src/invidious/search.cr
 +++ b/src/invidious/search.cr
 @@ -170,11 +170,6 @@ def produce_channel_search_continuation(ucid, query, page)
@@ -277,7 +277,7 @@ index d95d802ea..93197b6f0 100644
      else
        items = [] of ChannelVideo
 diff --git a/src/invidious/users.cr b/src/invidious/users.cr
-index 8ea7bd4a9..dc08a80ba 100644
+index 584082bed..724bb72b5 100644
 --- a/src/invidious/users.cr
 +++ b/src/invidious/users.cr
 @@ -44,12 +44,6 @@ def get_user(sid, headers, db, refresh = true)
@@ -342,7 +342,7 @@ index 8ea7bd4a9..dc08a80ba 100644
 +                                 "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
        end
  
-       videos.sort_by! { |video| video.published }.reverse!
+       videos.sort_by!(&.published).reverse!
      else
        if user.preferences.unseen_only
          # Only show unwatched
