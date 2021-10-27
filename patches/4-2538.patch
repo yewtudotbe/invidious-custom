@@ -1,7 +1,7 @@
 From 85c914fe8a7003c15090f7f90bcc6100d2af6052 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Mon, 25 Oct 2021 19:50:17 -0400
-Subject: [PATCH 1/2] Add remember_position field to the Preferences and
+Subject: [PATCH 1/7] Add remember_position field to the Preferences and
  VideoPreferences structs, and add a checkbox in the preferences page to
  toggle it
 
@@ -132,7 +132,7 @@ index 401c15ea6..025e8399f 100644
 From baa578033a25d886ca66c813afc859a97dfa5f8f Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Mon, 25 Oct 2021 20:59:36 -0400
-Subject: [PATCH 2/2] Save and load the position for the video using a local
+Subject: [PATCH 2/7] Save and load the position for the video using a local
  storage object, the object is a dictionary, where the key is the video ID,
  and the value is the time at which the user last left off watching the video.
  If the user deselected the 'remember video position' checkbox in the
@@ -239,3 +239,317 @@ index a461c53d6..4c12f1fe8 100644
  function set_time_percent(percent) {
      const duration = player.duration();
      const newTime = duration * (percent / 100);
+
+From 28c5143b8ad99c1f0973c707f97aa17ccbc712cc Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Tue, 26 Oct 2021 17:30:59 -0400
+Subject: [PATCH 3/7] Remove console.log debugging
+
+---
+ assets/js/player.js | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 4c12f1fe8..ed9c62eea 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -218,7 +218,6 @@ if (video_data.params.remember_position) {
+     });
+ }
+ else {
+-    console.log("Removing data for remebered positions");
+     remove_all_video_times();
+ }
+ 
+
+From 888d90a3b637b5f8c9dcbc8c392d1480fda44b74 Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Tue, 26 Oct 2021 18:43:28 -0400
+Subject: [PATCH 4/7] Added default value for get_video_time() which was
+ causing a bug in safari
+
+---
+ assets/js/player.js | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index ed9c62eea..2a0c6fd78 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -207,7 +207,7 @@ if (video_data.params.remember_position) {
+ 
+     set_seconds_after_start(remeberedTime);
+ 
+-    player.on("timeupdate", e => {
++    const updateTime = () => {
+         const raw = player.currentTime();
+         const time = Math.floor(raw);
+ 
+@@ -215,7 +215,9 @@ if (video_data.params.remember_position) {
+             save_video_time(time);
+             lastUpdated = time;
+         }
+-    });
++    };
++
++    player.on("timeupdate", updateTime);
+ }
+ else {
+     remove_all_video_times();
+@@ -372,7 +374,7 @@ function get_video_time() {
+         const all_video_times = get_all_video_times();
+         const timestamp = all_video_times[videoId];
+ 
+-        return timestamp;
++        return timestamp || 0;
+     }
+     catch {
+         return 0;
+
+From 40bf6466c2bb2331cd37dc9153432d3554bd6542 Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Tue, 26 Oct 2021 19:25:29 -0400
+Subject: [PATCH 5/7] Rename 'remember_position' to 'save_player_pos' for
+ clarity
+
+---
+ assets/js/player.js                 | 10 +++++-----
+ src/invidious/config.cr             |  2 +-
+ src/invidious/routes/preferences.cr |  8 ++++----
+ src/invidious/user/preferences.cr   |  2 +-
+ src/invidious/videos.cr             | 12 ++++++------
+ src/invidious/views/preferences.ecr |  4 ++--
+ 6 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 2a0c6fd78..b4973482b 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -38,7 +38,7 @@ embed_url.searchParams.delete('v');
+ short_url = location.origin + '/' + video_data.id + embed_url.search;
+ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+ 
+-var remember_position_key = "remember_position";
++var save_player_pos_key = "save_player_pos";
+ 
+ var shareOptions = {
+     socials: ['fbFeed', 'tw', 'reddit', 'email'],
+@@ -201,7 +201,7 @@ if (video_data.premiere_timestamp && Math.round(new Date() / 1000) < video_data.
+     player.getChild('bigPlayButton').hide();
+ }
+ 
+-if (video_data.params.remember_position) {
++if (video_data.params.save_player_pos) {
+     const remeberedTime = get_video_time();
+     let lastUpdated = 0;
+ 
+@@ -384,12 +384,12 @@ function get_video_time() {
+ function set_all_video_times(times) {
+     const json = JSON.stringify(times);
+ 
+-    localStorage.setItem(remember_position_key, json);
++    localStorage.setItem(save_player_pos_key, json);
+ }
+ 
+ function get_all_video_times() {
+     try {
+-        const raw = localStorage.getItem(remember_position_key);
++        const raw = localStorage.getItem(save_player_pos_key);
+         const times = JSON.parse(raw);
+ 
+         return times || {};
+@@ -400,7 +400,7 @@ function get_all_video_times() {
+ }
+ 
+ function remove_all_video_times() {
+-    localStorage.removeItem(remember_position_key);
++    localStorage.removeItem(save_player_pos_key);
+ }
+ 
+ function set_time_percent(percent) {
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 52b473f00..c10ba43e4 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -41,7 +41,7 @@ struct ConfigPreferences
+   property volume : Int32 = 100
+   property vr_mode : Bool = true
+   property show_nick : Bool = true
+-  property remember_position : Bool = false
++  property save_player_pos : Bool = false
+ 
+   def to_tuple
+     {% begin %}
+diff --git a/src/invidious/routes/preferences.cr b/src/invidious/routes/preferences.cr
+index e2254f4d1..21d19d748 100644
+--- a/src/invidious/routes/preferences.cr
++++ b/src/invidious/routes/preferences.cr
+@@ -70,9 +70,9 @@ module Invidious::Routes::PreferencesRoute
+     vr_mode ||= "off"
+     vr_mode = vr_mode == "on"
+ 
+-    remember_position = env.params.body["remember_position"]?.try &.as(String)
+-    remember_position ||= "off"
+-    remember_position = remember_position == "on"
++    save_player_pos = env.params.body["save_player_pos"]?.try &.as(String)
++    save_player_pos ||= "off"
++    save_player_pos = save_player_pos == "on"
+ 
+     show_nick = env.params.body["show_nick"]?.try &.as(String)
+     show_nick ||= "off"
+@@ -166,7 +166,7 @@ module Invidious::Routes::PreferencesRoute
+       extend_desc:                 extend_desc,
+       vr_mode:                     vr_mode,
+       show_nick:                   show_nick,
+-      remember_position:           remember_position,
++      save_player_pos:           save_player_pos,
+     }.to_json).to_json
+ 
+     if user = env.get? "user"
+diff --git a/src/invidious/user/preferences.cr b/src/invidious/user/preferences.cr
+index 5e3329949..a7f67edcb 100644
+--- a/src/invidious/user/preferences.cr
++++ b/src/invidious/user/preferences.cr
+@@ -52,7 +52,7 @@ struct Preferences
+   property video_loop : Bool = CONFIG.default_user_preferences.video_loop
+   property extend_desc : Bool = CONFIG.default_user_preferences.extend_desc
+   property volume : Int32 = CONFIG.default_user_preferences.volume
+-  property remember_position : Bool = CONFIG.default_user_preferences.remember_position
++  property save_player_pos : Bool = CONFIG.default_user_preferences.save_player_pos
+ 
+   module BoolToString
+     def self.to_json(value : String, json : JSON::Builder)
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index a4353fd0f..4d1f1fd95 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -246,7 +246,7 @@ struct VideoPreferences
+   property video_start : Float64 | Int32
+   property volume : Int32
+   property vr_mode : Bool
+-  property remember_position : Bool
++  property save_player_pos : Bool
+ end
+ 
+ struct Video
+@@ -1040,7 +1040,7 @@ def process_video_params(query, preferences)
+   extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+   volume = query["volume"]?.try &.to_i?
+   vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  remember_position = query["remember_position"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  save_player_pos = query["save_player_pos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+ 
+   if preferences
+     # region ||= preferences.region
+@@ -1061,7 +1061,7 @@ def process_video_params(query, preferences)
+     extend_desc ||= preferences.extend_desc.to_unsafe
+     volume ||= preferences.volume
+     vr_mode ||= preferences.vr_mode.to_unsafe
+-    remember_position ||= preferences.remember_position.to_unsafe
++    save_player_pos ||= preferences.save_player_pos.to_unsafe
+   end
+ 
+   annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
+@@ -1081,7 +1081,7 @@ def process_video_params(query, preferences)
+   extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
+   volume ||= CONFIG.default_user_preferences.volume
+   vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
+-  remember_position ||= CONFIG.default_user_preferences.remember_position.to_unsafe
++  save_player_pos ||= CONFIG.default_user_preferences.save_player_pos.to_unsafe
+ 
+   annotations = annotations == 1
+   autoplay = autoplay == 1
+@@ -1093,7 +1093,7 @@ def process_video_params(query, preferences)
+   video_loop = video_loop == 1
+   extend_desc = extend_desc == 1
+   vr_mode = vr_mode == 1
+-  remember_position = remember_position == 1
++  save_player_pos = save_player_pos == 1
+ 
+   if CONFIG.disabled?("dash") && quality == "dash"
+     quality = "high"
+@@ -1144,7 +1144,7 @@ def process_video_params(query, preferences)
+     video_start:        video_start,
+     volume:             volume,
+     vr_mode:            vr_mode,
+-    remember_position:  remember_position,
++    save_player_pos:  save_player_pos,
+   })
+ 
+   return params
+diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
+index 025e8399f..590f104c6 100644
+--- a/src/invidious/views/preferences.ecr
++++ b/src/invidious/views/preferences.ecr
+@@ -117,8 +117,8 @@
+             </div>
+ 
+             <div class="pure-control-group">
+-                <label for="remember_position">Remember the current video time:</label>
+-                <input name="remember_position" id="remember_position" type="checkbox" <% if preferences.remember_position %>checked<% end %>>
++                <label for="save_player_pos">Remember the current video time:</label>
++                <input name="save_player_pos" id="save_player_pos" type="checkbox" <% if preferences.save_player_pos %>checked<% end %>>
+             </div>
+ 
+             <legend><%= translate(locale, "Visual preferences") %></legend>
+
+From 928636ec9f93a0023206f8de2cb5ab7199100267 Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Tue, 26 Oct 2021 19:31:50 -0400
+Subject: [PATCH 6/7] Use localization for save player position label in the
+ preferences page
+
+---
+ locales/en-US.json                  | 3 ++-
+ src/invidious/views/preferences.ecr | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/locales/en-US.json b/locales/en-US.json
+index 230d96ad2..730cd0933 100644
+--- a/locales/en-US.json
++++ b/locales/en-US.json
+@@ -431,5 +431,6 @@
+     "footer_source_code": "Source code",
+     "footer_original_source_code": "Original source code",
+     "footer_modfied_source_code": "Modified Source code",
+-    "adminprefs_modified_source_code_url_label": "URL to modified source code repository"
++    "adminprefs_modified_source_code_url_label": "URL to modified source code repository",
++    "preferences_save_player_pos_label": "Save the current video time: "
+ }
+diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
+index 590f104c6..c1b293f0f 100644
+--- a/src/invidious/views/preferences.ecr
++++ b/src/invidious/views/preferences.ecr
+@@ -117,7 +117,7 @@
+             </div>
+ 
+             <div class="pure-control-group">
+-                <label for="save_player_pos">Remember the current video time:</label>
++                <label for="save_player_pos"><%= translate(locale, "preferences_save_player_pos_label") %></label>
+                 <input name="save_player_pos" id="save_player_pos" type="checkbox" <% if preferences.save_player_pos %>checked<% end %>>
+             </div>
+ 
+
+From bac8f3aa92a4c3576a8ea674d8e8ee9d9a4e18e5 Mon Sep 17 00:00:00 2001
+From: bbielsa <bgb7@njit.edu>
+Date: Tue, 26 Oct 2021 19:50:48 -0400
+Subject: [PATCH 7/7] Fix indentation of save_player_pos property value in
+ videos.cr
+
+---
+ src/invidious/videos.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 4d1f1fd95..bcde7d2d9 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -1144,7 +1144,7 @@ def process_video_params(query, preferences)
+     video_start:        video_start,
+     volume:             volume,
+     vr_mode:            vr_mode,
+-    save_player_pos:  save_player_pos,
++    save_player_pos:    save_player_pos,
+   })
+ 
+   return params
