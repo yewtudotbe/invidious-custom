@@ -51,8 +51,8 @@ jobs:
       id: buildx
       uses: docker/setup-buildx-action@v1
 
-    - name: Set up build timestamp
-      run: echo "timestamp=$(date +%Y%m%d)" >> $GITHUB_ENV
+    - name: Set up build commit id
+      run: echo "commitid=$(cd invidious && git log --format="%H" -n 1)-$(git log --format="%H" -n 1)" >> $GITHUB_ENV
 
     - name: Build and push alpine docker image
       id: docker_build_new
@@ -64,7 +64,7 @@ jobs:
             release=1
         platforms: linux/amd64,linux/arm64/v8
         push: true
-        tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.timestamp }}
+        tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
     - name: Build and push official crystal docker image
       id: docker_build
@@ -75,4 +75,4 @@ jobs:
             release=1
         file: ./Dockerfile
         push: true
-        tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.timestamp }}
+        tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.commitid }}
