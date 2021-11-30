@@ -1,0 +1,26 @@
+From 342fc202a7c6f34d57b4dbbd22f5df16781327f2 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Mon, 29 Nov 2021 14:53:27 +0100
+Subject: [PATCH] Fix #2682
+
+Fix "Missing param name: "q" (KeyError)"
+https://github.com/iv-org/invidious/issues/2682
+---
+ src/invidious/comments.cr | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/invidious/comments.cr b/src/invidious/comments.cr
+index ffdce0009..cd1af862d 100644
+--- a/src/invidious/comments.cr
++++ b/src/invidious/comments.cr
+@@ -575,7 +575,9 @@ def content_to_comment_html(content)
+           url = "/watch?v=#{url.request_target.lstrip('/')}"
+         elsif url.host.nil? || url.host.not_nil!.ends_with?("youtube.com")
+           if url.path == "/redirect"
+-            url = HTTP::Params.parse(url.query.not_nil!)["q"]
++            # Sometimes, links can be corrupted (why?) so make sure to fallback
++            # nicely. See https://github.com/iv-org/invidious/issues/2682
++            url = HTTP::Params.parse(url.query.not_nil!)["q"]? || ""
+           else
+             url = url.request_target
+           end
