@@ -1,7 +1,7 @@
 From 80a513baa5e595f62b08d7eed1ac709533fde838 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Wed, 24 Nov 2021 01:22:09 +0100
-Subject: [PATCH 1/4] Use new techniques to get (dis)likes back
+Subject: [PATCH 1/5] Use new techniques to get (dis)likes back
 
 ---
  src/invidious/videos.cr | 114 ++++++++++++++++++++++++++++------------
@@ -155,7 +155,7 @@ index d3e5800cc..1f9a6bc98 100644
 From ceb1feb3502367ec41c8ae7e28a0cfbd7a2e2170 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 25 Nov 2021 23:16:50 +0100
-Subject: [PATCH 2/4] likes/dislikes: better fallback management
+Subject: [PATCH 2/5] likes/dislikes: better fallback management
 
 '.to_i64?' instead of '.to_i64' returns nil rather than raising
 an exception when it's done on an empty string.
@@ -202,7 +202,7 @@ index 1f9a6bc98..d04c6ecbc 100644
 From 91f83952223a6a3b25268955b3fca6c6cf562fac Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sun, 28 Nov 2021 23:37:27 +0100
-Subject: [PATCH 3/4] Typo: missing '?' when looking for key in dislikes_button
+Subject: [PATCH 3/5] Typo: missing '?' when looking for key in dislikes_button
 
 Co-authored-by: Matthew McGarvey <matthewmcgarvey14@gmail.com>
 ---
@@ -226,7 +226,7 @@ index d04c6ecbc..c9f6626a1 100644
 From 4436359d0783ca8444467603a820c02372be7e9f Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sun, 28 Nov 2021 23:44:37 +0100
-Subject: [PATCH 4/4] Use dig to get category contents
+Subject: [PATCH 4/5] Use dig to get category contents
 
 Co-authored-by: Matthew McGarvey <matthewmcgarvey14@gmail.com>
 ---
@@ -246,3 +246,35 @@ index c9f6626a1..db94110b4 100644
  
        params["genre"] = JSON::Any.new(contents.try &.["text"]?.try &.as_s || "")
        params["genreUcid"] = JSON::Any.new(contents.try &.["navigationEndpoint"]?.try &.["browseEndpoint"]?
+
+From 4aa96ecab9319df15677d16e73351b88ee990050 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Wed, 1 Dec 2021 17:32:10 +0100
+Subject: [PATCH 5/5] Use 'dig()' in 'find()' statements
+
+---
+ src/invidious/videos.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index db94110b4..e20fb386c 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -897,7 +897,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil, context_
+ 
+   if toplevel_buttons
+     likes_button = toplevel_buttons.as_a
+-      .find(&.["toggleButtonRenderer"]["defaultIcon"]["iconType"].as_s.== "LIKE")
++      .find(&.dig("toggleButtonRenderer", "defaultIcon", "iconType").as_s.== "LIKE")
+       .try &.["toggleButtonRenderer"]
+ 
+     if likes_button
+@@ -910,7 +910,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil, context_
+     end
+ 
+     dislikes_button = toplevel_buttons.as_a
+-      .find(&.["toggleButtonRenderer"]["defaultIcon"]["iconType"].as_s.== "DISLIKE")
++      .find(&.dig("toggleButtonRenderer", "defaultIcon", "iconType").as_s.== "DISLIKE")
+       .try &.["toggleButtonRenderer"]
+ 
+     if dislikes_button
