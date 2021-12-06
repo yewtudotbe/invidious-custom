@@ -57,7 +57,7 @@ new file mode 100644
 index 00000000..59e6f7f9
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +<% content_for "header" do %>
 +<title>Donate - Invidious</title>
 +<% end %>
@@ -88,6 +88,7 @@ index 00000000..59e6f7f9
 +        <li>Binance coin: <a href="bnb:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a></li>
 +        <li>Litecoin: <a href="litecoin:ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d">ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d</a></li>
 +        <li>USD Coin: <a href="usdcoin:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a></li>
++        <li>Wownero: <a href="wownero:Wo55BYoJFbucoaxybV3PJRKcCLXWhkWTm1p1a6k7Jfbt7f3xA6caGgNWwxjQhejcBZ4XH8Q6XiQhZDncT2DVeaEW2THSonTJH">Wo55BYoJFbucoaxybV3PJRKcCLXWhkWTm1p1a6k7Jfbt7f3xA6caGgNWwxjQhejcBZ4XH8Q6XiQhZDncT2DVeaEW2THSonTJH</a></li>
 +    </ul>
 +    <h4>Is your prefered payment method not listed?</h4>
 +    <p>Feel ask me by email at <code>donate[at]yewtu.be</code> to add it.</p>
