@@ -1,3 +1,9 @@
+From 1955241d58c91d247d038a82aacdafc4a49a683b Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Wed, 1 Dec 2021 18:32:28 +0100
+Subject: [PATCH 1] patch
+
+---
 diff --git a/src/invidious/playlists.cr b/src/invidious/playlists.cr
 index f68dc3b0..acf66303 100644
 --- a/src/invidious/playlists.cr
