@@ -1,0 +1,34 @@
+From 9931c3033cd9ae5100715b6a295dc02b5c7bd8f2 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Wed, 8 Dec 2021 20:45:49 +0100
+Subject: [PATCH] add proxy to csp
+
+---
+ src/invidious.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 21a12ff2..bbc91797 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -190,7 +190,7 @@ before_all do |env|
+   if CONFIG.disabled?("local") || !preferences.local
+     extra_media_csp = " https://*.googlevideo.com:443 https://*.youtube.com:443"
+   else
+-    extra_media_csp = ""
++    extra_media_csp = " https://*.proxy.yewtu.be:443"
+   end
+ 
+   # Only allow the pages at /embed/* to be embedded
+@@ -208,7 +208,7 @@ before_all do |env|
+     "style-src 'self' 'unsafe-inline'",
+     "img-src 'self' data:",
+     "font-src 'self' data:",
+-    "connect-src 'self'",
++    "connect-src 'self' https://*.proxy.yewtu.be:443",
+     "manifest-src 'self'",
+     "media-src 'self' blob:" + extra_media_csp,
+     "child-src 'self' blob:",
+-- 
+2.34.1
+
