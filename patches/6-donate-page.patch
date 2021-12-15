@@ -1,4 +1,4 @@
-From a7bfbd84d9da7f15e6f7b8bde2aafde19a232b97 Mon Sep 17 00:00:00 2001
+From 12a044aae4ad517fce6367eb56a1b42fffaa4153 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Thu, 12 Aug 2021 23:16:22 +0200
 Subject: [PATCH] donate page
@@ -7,16 +7,15 @@ Subject: [PATCH] donate page
  src/invidious.cr                             |  1 +
  src/invidious/routes/misc.cr                 |  5 +++
  src/invidious/views/components/feed_menu.ecr |  3 ++
- src/invidious/views/donate.ecr               | 34 ++++++++++++++++++++
- src/invidious/views/template.ecr             |  4 +--
- 5 files changed, 45 insertions(+), 2 deletions(-)
+ src/invidious/views/donate.ecr               | 35 ++++++++++++++++++++
+ 4 files changed, 44 insertions(+)
  create mode 100644 src/invidious/views/donate.ecr
 
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 9e67e216..a73e6645 100644
+index ba8f8484..60ba7688 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -314,6 +314,7 @@ end
+@@ -304,6 +304,7 @@ end
  
  {% unless flag?(:api_only) %}
    Invidious::Routing.get "/", Invidious::Routes::Misc, :home
@@ -25,7 +24,7 @@ index 9e67e216..a73e6645 100644
    Invidious::Routing.get "/licenses", Invidious::Routes::Misc, :licenses
  
 diff --git a/src/invidious/routes/misc.cr b/src/invidious/routes/misc.cr
-index 0e6356d0..cbf5215d 100644
+index d6bd9571..81fb9a98 100644
 --- a/src/invidious/routes/misc.cr
 +++ b/src/invidious/routes/misc.cr
 @@ -33,6 +33,11 @@ module Invidious::Routes::Misc
@@ -33,12 +32,12 @@ index 0e6356d0..cbf5215d 100644
    end
  
 +  def self.donate(env)
-+    locale = LOCALES[env.get("preferences").as(Preferences).locale]?
++    locale = env.get("preferences").as(Preferences).locale
 +    templated "donate"
 +  end
 +
    def self.licenses(env)
-     locale = LOCALES[env.get("preferences").as(Preferences).locale]?
+     locale = env.get("preferences").as(Preferences).locale
      rendered "licenses"
 diff --git a/src/invidious/views/components/feed_menu.ecr b/src/invidious/views/components/feed_menu.ecr
 index 3dbeaf37..d84d03d0 100644
@@ -54,7 +53,7 @@ index 3dbeaf37..d84d03d0 100644
          <% feed_menu.reject! {|item| {"Subscriptions", "Playlists"}.includes? item} %>
 diff --git a/src/invidious/views/donate.ecr b/src/invidious/views/donate.ecr
 new file mode 100644
-index 00000000..59e6f7f9
+index 00000000..1264f50a
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
 @@ -0,0 +1,35 @@
@@ -94,3 +93,6 @@ index 00000000..59e6f7f9
 +    <p>Feel ask me by email at <code>donate[at]yewtu.be</code> to add it.</p>
 +</div>
 \ No newline at end of file
+-- 
+2.34.1
+
