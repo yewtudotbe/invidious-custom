@@ -1,4 +1,4 @@
-From 71f11be12b9c7038734144906a0fe90c92ba87ce Mon Sep 17 00:00:00 2001
+From 2245206c623bf6dd3ac36819f4a5ac6d9ed29eb8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -54,7 +54,7 @@ index cd4e0ffdb..f2ac4876c 100644
 +  (ucid COLLATE pg_catalog."default", published);
  
 diff --git a/docker-compose.yml b/docker-compose.yml
-index cc62d6e55..a47754b45 100644
+index c76c314c6..ac0f76c93 100644
 --- a/docker-compose.yml
 +++ b/docker-compose.yml
 @@ -25,7 +25,6 @@ services:
@@ -78,7 +78,7 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 21a12ff2e..fe9427d2b 100644
+index ade136089..ba8f84849 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -82,14 +82,6 @@ Kemal.config.extra_options do |parser|
@@ -119,7 +119,7 @@ index 21a12ff2e..fe9427d2b 100644
    env.request.cookies.each do |cookie|
      cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index bacdb4acc..0aedaa99e 100644
+index 578e31fd8..96733e56c 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -56,7 +56,6 @@ class Config
@@ -212,10 +212,10 @@ index 926c27fa6..000000000
 -  end
 -end
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index b719b5716..cb7dea9d2 100644
+index 2a50561d5..ca0e2336d 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
-@@ -451,9 +451,6 @@ module Invidious::Routes::Login
+@@ -457,9 +457,6 @@ module Invidious::Routes::Login
          PG_DB.exec("INSERT INTO users VALUES (#{args})", args: user_array)
          PG_DB.exec("INSERT INTO session_ids VALUES ($1, $2, $3)", sid, email, Time.utc)
  
@@ -226,7 +226,7 @@ index b719b5716..cb7dea9d2 100644
            secure = true
          else
 diff --git a/src/invidious/routes/search.cr b/src/invidious/routes/search.cr
-index 3f1e219f2..cd40d3913 100644
+index c256d156c..365425d93 100644
 --- a/src/invidious/routes/search.cr
 +++ b/src/invidious/routes/search.cr
 @@ -53,6 +53,8 @@ module Invidious::Routes::Search

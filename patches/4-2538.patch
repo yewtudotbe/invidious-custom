@@ -1,4 +1,4 @@
-From 8c303387b1404c30b5bdac506ba421e049983687 Mon Sep 17 00:00:00 2001
+From a6a0bbf39834003b9ee26392e626828c05209010 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Mon, 25 Oct 2021 19:50:17 -0400
 Subject: [PATCH 1/8] Add remember_position field to the Preferences and
@@ -14,7 +14,7 @@ Subject: [PATCH 1/8] Add remember_position field to the Preferences and
  5 files changed, 18 insertions(+)
 
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index bacdb4acc..cd28e76b1 100644
+index 578e31fd8..bdd670f14 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -42,6 +42,7 @@ struct ConfigPreferences
@@ -26,7 +26,7 @@ index bacdb4acc..cd28e76b1 100644
    def to_tuple
      {% begin %}
 diff --git a/src/invidious/routes/preferences.cr b/src/invidious/routes/preferences.cr
-index 8793d4e9a..1373de755 100644
+index edf9e1e79..3bf7e5dac 100644
 --- a/src/invidious/routes/preferences.cr
 +++ b/src/invidious/routes/preferences.cr
 @@ -70,6 +70,10 @@ module Invidious::Routes::PreferencesRoute
@@ -61,7 +61,7 @@ index c15876f51..f2d089b46 100644
    module BoolToString
      def self.to_json(value : String, json : JSON::Builder)
 diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
-index d38a66d8f..a346985df 100644
+index 621ff3867..bffd564d4 100644
 --- a/src/invidious/videos.cr
 +++ b/src/invidious/videos.cr
 @@ -246,6 +246,7 @@ struct VideoPreferences
@@ -72,7 +72,7 @@ index d38a66d8f..a346985df 100644
  end
  
  struct Video
-@@ -1039,6 +1040,7 @@ def process_video_params(query, preferences)
+@@ -1090,6 +1091,7 @@ def process_video_params(query, preferences)
    extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
    volume = query["volume"]?.try &.to_i?
    vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
@@ -80,7 +80,7 @@ index d38a66d8f..a346985df 100644
  
    if preferences
      # region ||= preferences.region
-@@ -1059,6 +1061,7 @@ def process_video_params(query, preferences)
+@@ -1110,6 +1112,7 @@ def process_video_params(query, preferences)
      extend_desc ||= preferences.extend_desc.to_unsafe
      volume ||= preferences.volume
      vr_mode ||= preferences.vr_mode.to_unsafe
@@ -88,7 +88,7 @@ index d38a66d8f..a346985df 100644
    end
  
    annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
-@@ -1078,6 +1081,7 @@ def process_video_params(query, preferences)
+@@ -1129,6 +1132,7 @@ def process_video_params(query, preferences)
    extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
    volume ||= CONFIG.default_user_preferences.volume
    vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
@@ -96,7 +96,7 @@ index d38a66d8f..a346985df 100644
  
    annotations = annotations == 1
    autoplay = autoplay == 1
-@@ -1089,6 +1093,7 @@ def process_video_params(query, preferences)
+@@ -1140,6 +1144,7 @@ def process_video_params(query, preferences)
    video_loop = video_loop == 1
    extend_desc = extend_desc == 1
    vr_mode = vr_mode == 1
@@ -104,7 +104,7 @@ index d38a66d8f..a346985df 100644
  
    if CONFIG.disabled?("dash") && quality == "dash"
      quality = "high"
-@@ -1139,6 +1144,7 @@ def process_video_params(query, preferences)
+@@ -1190,6 +1195,7 @@ def process_video_params(query, preferences)
      video_start:        video_start,
      volume:             volume,
      vr_mode:            vr_mode,
@@ -113,7 +113,7 @@ index d38a66d8f..a346985df 100644
  
    return params
 diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
-index 374edc998..64c4bcc30 100644
+index 6bd9e3486..603c337be 100644
 --- a/src/invidious/views/preferences.ecr
 +++ b/src/invidious/views/preferences.ecr
 @@ -116,6 +116,11 @@
@@ -129,7 +129,7 @@ index 374edc998..64c4bcc30 100644
  
              <div class="pure-control-group">
 
-From dfc887dce3ac04dc39fe969634f82492be91cc22 Mon Sep 17 00:00:00 2001
+From 2a45b4eba031cc59551150a7e674e5b5943ab490 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Mon, 25 Oct 2021 20:59:36 -0400
 Subject: [PATCH 2/8] Save and load the position for the video using a local
@@ -240,7 +240,7 @@ index a461c53d6..4c12f1fe8 100644
      const duration = player.duration();
      const newTime = duration * (percent / 100);
 
-From 78275fe62b44b57b9c3ee5c9885e6a92a523db80 Mon Sep 17 00:00:00 2001
+From 1261323c66e4c4886e4620e4e1eaaa7de3b2403e Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Tue, 26 Oct 2021 17:30:59 -0400
 Subject: [PATCH 3/8] Remove console.log debugging
@@ -262,7 +262,7 @@ index 4c12f1fe8..ed9c62eea 100644
  }
  
 
-From 7e007da7e5d3cae30b85f37f3b6155f87759085e Mon Sep 17 00:00:00 2001
+From b6792cf02e79b2376ffae13fae6dc225095469bf Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Tue, 26 Oct 2021 18:43:28 -0400
 Subject: [PATCH 4/8] Added default value for get_video_time() which was
@@ -306,7 +306,7 @@ index ed9c62eea..2a0c6fd78 100644
      catch {
          return 0;
 
-From ecb69e9cdc1b1acd80166404264861f2ca72884d Mon Sep 17 00:00:00 2001
+From 5abe7fe12377096c5b63bc787ccdbb11b8cf78a9 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Tue, 26 Oct 2021 19:25:29 -0400
 Subject: [PATCH 5/8] Rename 'remember_position' to 'save_player_pos' for
@@ -368,7 +368,7 @@ index 2a0c6fd78..b4973482b 100644
  
  function set_time_percent(percent) {
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index cd28e76b1..4ac5b088d 100644
+index bdd670f14..c4a8bf837 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -42,7 +42,7 @@ struct ConfigPreferences
@@ -381,7 +381,7 @@ index cd28e76b1..4ac5b088d 100644
    def to_tuple
      {% begin %}
 diff --git a/src/invidious/routes/preferences.cr b/src/invidious/routes/preferences.cr
-index 1373de755..fb85aa167 100644
+index 3bf7e5dac..a07584c81 100644
 --- a/src/invidious/routes/preferences.cr
 +++ b/src/invidious/routes/preferences.cr
 @@ -70,9 +70,9 @@ module Invidious::Routes::PreferencesRoute
@@ -420,7 +420,7 @@ index f2d089b46..bf7ea401f 100644
    module BoolToString
      def self.to_json(value : String, json : JSON::Builder)
 diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
-index a346985df..449cd1e05 100644
+index bffd564d4..9b4b54e88 100644
 --- a/src/invidious/videos.cr
 +++ b/src/invidious/videos.cr
 @@ -246,7 +246,7 @@ struct VideoPreferences
@@ -432,7 +432,7 @@ index a346985df..449cd1e05 100644
  end
  
  struct Video
-@@ -1040,7 +1040,7 @@ def process_video_params(query, preferences)
+@@ -1091,7 +1091,7 @@ def process_video_params(query, preferences)
    extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
    volume = query["volume"]?.try &.to_i?
    vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
@@ -441,7 +441,7 @@ index a346985df..449cd1e05 100644
  
    if preferences
      # region ||= preferences.region
-@@ -1061,7 +1061,7 @@ def process_video_params(query, preferences)
+@@ -1112,7 +1112,7 @@ def process_video_params(query, preferences)
      extend_desc ||= preferences.extend_desc.to_unsafe
      volume ||= preferences.volume
      vr_mode ||= preferences.vr_mode.to_unsafe
@@ -450,7 +450,7 @@ index a346985df..449cd1e05 100644
    end
  
    annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
-@@ -1081,7 +1081,7 @@ def process_video_params(query, preferences)
+@@ -1132,7 +1132,7 @@ def process_video_params(query, preferences)
    extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
    volume ||= CONFIG.default_user_preferences.volume
    vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
@@ -459,7 +459,7 @@ index a346985df..449cd1e05 100644
  
    annotations = annotations == 1
    autoplay = autoplay == 1
-@@ -1093,7 +1093,7 @@ def process_video_params(query, preferences)
+@@ -1144,7 +1144,7 @@ def process_video_params(query, preferences)
    video_loop = video_loop == 1
    extend_desc = extend_desc == 1
    vr_mode = vr_mode == 1
@@ -468,7 +468,7 @@ index a346985df..449cd1e05 100644
  
    if CONFIG.disabled?("dash") && quality == "dash"
      quality = "high"
-@@ -1144,7 +1144,7 @@ def process_video_params(query, preferences)
+@@ -1195,7 +1195,7 @@ def process_video_params(query, preferences)
      video_start:        video_start,
      volume:             volume,
      vr_mode:            vr_mode,
@@ -478,7 +478,7 @@ index a346985df..449cd1e05 100644
  
    return params
 diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
-index 64c4bcc30..615f12c1a 100644
+index 603c337be..b1ec68ad7 100644
 --- a/src/invidious/views/preferences.ecr
 +++ b/src/invidious/views/preferences.ecr
 @@ -117,8 +117,8 @@
@@ -493,7 +493,7 @@ index 64c4bcc30..615f12c1a 100644
  
              <legend><%= translate(locale, "preferences_category_visual") %></legend>
 
-From 77de2b07d5f6473d58a8672bbc37d83bb7e02edd Mon Sep 17 00:00:00 2001
+From f31bd5ffb9faf770810360476c63e4e5bed6ed67 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Tue, 26 Oct 2021 19:31:50 -0400
 Subject: [PATCH 6/8] Use localization for save player position label in the
@@ -505,19 +505,19 @@ Subject: [PATCH 6/8] Use localization for save player position label in the
  2 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/locales/en-US.json b/locales/en-US.json
-index 480326ce8..89bdd59c8 100644
+index 8bdf719b0..94aac89e3 100644
 --- a/locales/en-US.json
 +++ b/locales/en-US.json
-@@ -432,5 +432,6 @@
-     "footer_source_code": "Source code",
-     "footer_original_source_code": "Original source code",
-     "footer_modfied_source_code": "Modified Source code",
--    "adminprefs_modified_source_code_url_label": "URL to modified source code repository"
-+    "adminprefs_modified_source_code_url_label": "URL to modified source code repository",
+@@ -461,5 +461,6 @@
+     "download_subtitles": "Subtitles - `x` (.vtt)",
+     "user_created_playlists": "`x` created playlists",
+     "user_saved_playlists": "`x` saved playlists",
+-    "Video unavailable": "Video unavailable"
++    "Video unavailable": "Video unavailable",
 +    "preferences_save_player_pos_label": "Save the current video time: "
  }
 diff --git a/src/invidious/views/preferences.ecr b/src/invidious/views/preferences.ecr
-index 615f12c1a..3b4a522bb 100644
+index b1ec68ad7..969042596 100644
 --- a/src/invidious/views/preferences.ecr
 +++ b/src/invidious/views/preferences.ecr
 @@ -117,7 +117,7 @@
@@ -530,7 +530,7 @@ index 615f12c1a..3b4a522bb 100644
              </div>
  
 
-From 0ffd5c9482ccf82e87724be23f500ddb69773ad9 Mon Sep 17 00:00:00 2001
+From b90bceb2dc0e4bd29b9ace6a0b9d413f8eb673da Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Wed, 3 Nov 2021 00:06:29 -0400
 Subject: [PATCH 7/8] Fix formatting of preferences.cr and videos.cr
@@ -541,7 +541,7 @@ Subject: [PATCH 7/8] Fix formatting of preferences.cr and videos.cr
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/invidious/routes/preferences.cr b/src/invidious/routes/preferences.cr
-index fb85aa167..aea168887 100644
+index a07584c81..15c00700b 100644
 --- a/src/invidious/routes/preferences.cr
 +++ b/src/invidious/routes/preferences.cr
 @@ -169,7 +169,7 @@ module Invidious::Routes::PreferencesRoute
@@ -554,10 +554,10 @@ index fb85aa167..aea168887 100644
  
      if user = env.get? "user"
 diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
-index 449cd1e05..03ce482be 100644
+index 9b4b54e88..d4ef09003 100644
 --- a/src/invidious/videos.cr
 +++ b/src/invidious/videos.cr
-@@ -1144,7 +1144,7 @@ def process_video_params(query, preferences)
+@@ -1195,7 +1195,7 @@ def process_video_params(query, preferences)
      video_start:        video_start,
      volume:             volume,
      vr_mode:            vr_mode,
@@ -567,7 +567,7 @@ index 449cd1e05..03ce482be 100644
  
    return params
 
-From a2e68e58b0fb282c9dc13eb20d307e894532dee3 Mon Sep 17 00:00:00 2001
+From ed6476b5ea1534d18198296f1c897e13467c7c48 Mon Sep 17 00:00:00 2001
 From: bbielsa <bgb7@njit.edu>
 Date: Wed, 17 Nov 2021 20:25:47 -0500
 Subject: [PATCH 8/8] Allow the t parameter to override the stored video
