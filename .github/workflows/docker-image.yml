@@ -67,7 +67,7 @@ jobs:
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
     - name: Build and push alpine docker image with API only
-      id: docker_build_new
+      id: docker_build_new_api
       uses: docker/build-push-action@v2
       with:
         context: ./
