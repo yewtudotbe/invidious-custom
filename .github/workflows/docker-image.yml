@@ -66,6 +66,19 @@ jobs:
         push: true
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
+    - name: Build and push alpine docker image with API only
+      id: docker_build_new
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./Dockerfile.new
+        build-args: |
+            release=1
+            add_build_args=-Dapi_only
+        platforms: linux/amd64,linux/arm64/v8
+        push: true
+        tags: unixfox/invidious-custom:api-new-latest, unixfox/invidious-custom:api-new-build-${{ env.commitid }}
+
     - name: Build and push official crystal docker image
       id: docker_build
       uses: docker/build-push-action@v2
