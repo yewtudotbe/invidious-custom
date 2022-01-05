@@ -1,4 +1,4 @@
-From 2245206c623bf6dd3ac36819f4a5ac6d9ed29eb8 Mon Sep 17 00:00:00 2001
+From 02de77aae17e4cd29b1ff65a2df06ef78d5709ad Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -78,10 +78,10 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index ade136089..ba8f84849 100644
+index fb67af871..e8610731c 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -82,14 +82,6 @@ Kemal.config.extra_options do |parser|
+@@ -83,14 +83,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -96,7 +96,7 @@ index ade136089..ba8f84849 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -134,10 +126,6 @@ if CONFIG.channel_threads > 0
+@@ -135,10 +127,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -107,22 +107,22 @@ index ade136089..ba8f84849 100644
  DECRYPT_FUNCTION = DecryptFunction.new(CONFIG.decrypt_polling)
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
-@@ -1014,10 +1002,8 @@ post "/delete_account" do |env|
+@@ -1006,10 +994,8 @@ post "/delete_account" do |env|
      next error_template(400, ex)
    end
  
 -  view_name = "subscriptions_#{sha256(user.email)}"
-   PG_DB.exec("DELETE FROM users * WHERE email = $1", user.email)
-   PG_DB.exec("DELETE FROM session_ids * WHERE email = $1", user.email)
+   Invidious::Database::Users.delete(user)
+   Invidious::Database::SessionIDs.delete(email: user.email)
 -  PG_DB.exec("DROP MATERIALIZED VIEW #{view_name}")
  
    env.request.cookies.each do |cookie|
      cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 578e31fd8..96733e56c 100644
+index c4a8bf837..7c3d439da 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -56,7 +56,6 @@ class Config
+@@ -57,7 +57,6 @@ class Config
    include YAML::Serializable
  
    property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
@@ -132,7 +132,7 @@ index 578e31fd8..96733e56c 100644
    property db : DBConfig? = nil                  # Database configuration with separate parameters (username, hostname, etc)
 diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
 deleted file mode 100644
-index 926c27fa6..000000000
+index 4b52c9596..000000000
 --- a/src/invidious/jobs/refresh_feeds_job.cr
 +++ /dev/null
 @@ -1,75 +0,0 @@
@@ -163,7 +163,7 @@ index 926c27fa6..000000000
 -          spawn do
 -            begin
 -              # Drop outdated views
--              column_array = get_column_array(db, view_name)
+-              column_array = Invidious::Database.get_column_array(db, view_name)
 -              ChannelVideo.type_array.each_with_index do |name, i|
 -                if name != column_array[i]?
 -                  LOGGER.info("RefreshFeedsJob: DROP MATERIALIZED VIEW #{view_name}")
@@ -212,12 +212,12 @@ index 926c27fa6..000000000
 -  end
 -end
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index 2a50561d5..ca0e2336d 100644
+index 64da3e4ee..5f056de5e 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
-@@ -457,9 +457,6 @@ module Invidious::Routes::Login
-         PG_DB.exec("INSERT INTO users VALUES (#{args})", args: user_array)
-         PG_DB.exec("INSERT INTO session_ids VALUES ($1, $2, $3)", sid, email, Time.utc)
+@@ -452,9 +452,6 @@ module Invidious::Routes::Login
+         Invidious::Database::Users.insert(user)
+         Invidious::Database::SessionIDs.insert(sid, email)
  
 -        view_name = "subscriptions_#{sha256(user.email)}"
 -        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
@@ -277,44 +277,43 @@ index 2095721c8..db247f00a 100644
      else
        items = [] of ChannelVideo
 diff --git a/src/invidious/users.cr b/src/invidious/users.cr
-index 584082bed..724bb72b5 100644
+index 490749943..534e8b522 100644
 --- a/src/invidious/users.cr
 +++ b/src/invidious/users.cr
-@@ -44,12 +44,6 @@ def get_user(sid, headers, db, refresh = true)
+@@ -38,24 +38,12 @@ def get_user(sid, headers, refresh = true)
  
-       db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
-       ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
+       Invidious::Database::Users.insert(user, update_on_conflict: true)
+       Invidious::Database::SessionIDs.insert(sid, user.email, handle_conflicts: true)
 -
 -      begin
 -        view_name = "subscriptions_#{sha256(user.email)}"
--        db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
 -      rescue ex
 -      end
      end
    else
-     user, sid = fetch_user(sid, headers, db)
-@@ -62,12 +56,6 @@ def get_user(sid, headers, db, refresh = true)
+     user, sid = fetch_user(sid, headers)
  
-     db.exec("INSERT INTO session_ids VALUES ($1,$2,$3) \
-     ON CONFLICT (id) DO NOTHING", sid, user.email, Time.utc)
+     Invidious::Database::Users.insert(user, update_on_conflict: true)
+     Invidious::Database::SessionIDs.insert(sid, user.email, handle_conflicts: true)
 -
 -    begin
 -      view_name = "subscriptions_#{sha256(user.email)}"
--      db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-      PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
 -    rescue ex
 -    end
    end
  
    return user, sid
-@@ -238,7 +226,6 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+@@ -225,7 +213,6 @@ def get_subscription_feed(user, max_results = 40, page = 1)
+   offset = (page - 1) * limit
  
-   notifications = db.query_one("SELECT notifications FROM users WHERE email = $1", user.email,
-     as: Array(String))
+   notifications = Invidious::Database::Users.select_notifications(user)
 -  view_name = "subscriptions_#{sha256(user.email)}"
  
    if user.preferences.notifications_only && !notifications.empty?
      # Only show notifications
-@@ -267,33 +254,39 @@ def get_subscription_feed(db, user, max_results = 40, page = 1)
+@@ -251,33 +238,39 @@ def get_subscription_feed(user, max_results = 40, page = 1)
          # Show latest video from a channel that a user hasn't watched
          # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
  
