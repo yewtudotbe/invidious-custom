@@ -1,4 +1,4 @@
-FROM alpine:edge AS builder
+FROM alpine:3.15 AS builder
 RUN apk add --no-cache 'crystal=1.2.2-r0' shards sqlite-static yaml-static yaml-dev libxml2-dev zlib-static openssl-libs-static openssl-dev musl-dev yq
 
 ARG add_build_args
@@ -24,7 +24,7 @@ RUN crystal build ./src/invidious.cr ${add_build_args} \
 
 RUN shards build --release --static sentry_crash_handler
 
-FROM alpine:edge
+FROM alpine:3.15
 RUN apk add --no-cache librsvg ttf-opensans
 WORKDIR /invidious
 RUN addgroup -g 1000 -S invidious && \
