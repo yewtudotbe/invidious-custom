@@ -1,0 +1,24 @@
+From 0fa08e63e778d0b30d3acd1bb28b6e40c75567bb Mon Sep 17 00:00:00 2001
+From: Marko Zajc <marko@zajc.eu.org>
+Date: Sat, 8 Jan 2022 00:39:37 +0100
+Subject: [PATCH] Disable input autofocus
+
+---
+ src/invidious/views/components/search_box.ecr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/views/components/search_box.ecr b/src/invidious/views/components/search_box.ecr
+index 4144d161..165d8623 100644
+--- a/src/invidious/views/components/search_box.ecr
++++ b/src/invidious/views/components/search_box.ecr
+@@ -1,7 +1,7 @@
+ <form class="pure-form" action="/search" method="get">
+        <fieldset>
+                <input type="search" id="searchbox" autocomplete="off" autocorrect="off"
+-               autocapitalize="none" spellcheck="false" autofocus name="q"
++               autocapitalize="none" spellcheck="false" name="q"
+                placeholder="<%= translate(locale, "search") %>"
+                title="<%= translate(locale, "search") %>"
+                value="<%= env.get?("search").try {|x| HTML.escape(x.as(String)) } %>">
+-- 
+2.30.2
