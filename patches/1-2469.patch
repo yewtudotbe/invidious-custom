@@ -1,4 +1,4 @@
-From 02de77aae17e4cd29b1ff65a2df06ef78d5709ad Mon Sep 17 00:00:00 2001
+From f0676706ef86949ece14a02035c8181d50c602a2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -78,7 +78,7 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index fb67af871..e8610731c 100644
+index 7a324bd12..eb4d9f6af 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -83,14 +83,6 @@ Kemal.config.extra_options do |parser|
@@ -107,7 +107,7 @@ index fb67af871..e8610731c 100644
  DECRYPT_FUNCTION = DecryptFunction.new(CONFIG.decrypt_polling)
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
-@@ -1006,10 +994,8 @@ post "/delete_account" do |env|
+@@ -1018,10 +1006,8 @@ post "/delete_account" do |env|
      next error_template(400, ex)
    end
  
@@ -226,7 +226,7 @@ index 64da3e4ee..5f056de5e 100644
            secure = true
          else
 diff --git a/src/invidious/routes/search.cr b/src/invidious/routes/search.cr
-index c256d156c..365425d93 100644
+index 5e606adf7..8450d08b2 100644
 --- a/src/invidious/routes/search.cr
 +++ b/src/invidious/routes/search.cr
 @@ -53,6 +53,8 @@ module Invidious::Routes::Search
@@ -237,12 +237,12 @@ index c256d156c..365425d93 100644
 +
        begin
          search_query, count, videos, operators = process_search_query(query, page, user, region: region)
-       rescue ex
+       rescue ex : ChannelSearchException
 diff --git a/src/invidious/search.cr b/src/invidious/search.cr
-index 2095721c8..db247f00a 100644
+index 0f6dc6eba..9987ffbf6 100644
 --- a/src/invidious/search.cr
 +++ b/src/invidious/search.cr
-@@ -170,11 +170,6 @@ def produce_channel_search_continuation(ucid, query, page)
+@@ -177,11 +177,6 @@ def produce_channel_search_continuation(ucid, query, page)
  end
  
  def process_search_query(query, page, user, region)
@@ -254,7 +254,7 @@ index 2095721c8..db247f00a 100644
    channel = nil
    content_type = "all"
    date = ""
-@@ -212,14 +207,14 @@ def process_search_query(query, page, user, region)
+@@ -219,14 +214,14 @@ def process_search_query(query, page, user, region)
    if channel
      count, items = channel_search(search_query, page, channel)
    elsif subscriptions
