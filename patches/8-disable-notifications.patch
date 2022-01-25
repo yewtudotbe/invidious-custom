@@ -1,0 +1,32 @@
+From 468c94d101555cabf8f73c0e7c7683d1385fd474 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Tue, 25 Jan 2022 22:20:40 +0100
+Subject: [PATCH 1/1] disable notifications
+
+---
+ src/invidious/database/users.cr | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/invidious/database/users.cr b/src/invidious/database/users.cr
+index 7cb36040..3c5e1a6c 100644
+--- a/src/invidious/database/users.cr
++++ b/src/invidious/database/users.cr
+@@ -125,7 +125,6 @@ module Invidious::Database::Users
+       WHERE $2 = ANY(subscriptions)
+     SQL
+ 
+-    PG_DB.exec(request, video.id, video.ucid)
+   end
+ 
+   def remove_notification(user : User, vid : String)
+@@ -135,7 +134,6 @@ module Invidious::Database::Users
+       WHERE email = $2
+     SQL
+ 
+-    PG_DB.exec(request, vid, user.email)
+   end
+ 
+   def clear_notifications(user : User)
+-- 
+2.34.1
+
