@@ -4,7 +4,7 @@ RUN apk add --no-cache sqlite-static yaml-static
 WORKDIR /invidious
 COPY ./invidious/shard.yml ./shard.yml
 COPY ./invidious/shard.lock ./shard.lock
-RUN shards update && shards install --production
+RUN shards update --production && shards install --production
 
 COPY --from=quay.io/invidious/lsquic-compiled /root/liblsquic.a ./lib/lsquic/src/lsquic/ext/liblsquic.a
 

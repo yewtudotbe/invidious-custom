@@ -9,7 +9,7 @@ COPY ./invidious/shard.lock ./shard.lock
 # Sentry is just for reporting Invidious crashes, no personal data is collected.
 RUN yq e -i '.dependencies.raven.github = "Sija/raven.cr"' shard.yml
 RUN yq e -i '.targets.sentry_crash_handler.main = "lib/raven/src/crash_handler.cr"' shard.yml
-RUN shards update && shards install --production
+RUN shards update --production && shards install --production
 
 COPY --from=quay.io/invidious/lsquic-compiled /root/liblsquic.a ./lib/lsquic/src/lsquic/ext/liblsquic.a
 
