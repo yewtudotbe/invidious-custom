@@ -13,9 +13,9 @@ COPY ./invidious/src/ ./src/
 # See definition of CURRENT_BRANCH, CURRENT_COMMIT and CURRENT_VERSION.
 COPY ./invidious/.git/ ./.git/
 # Required for fetching player dependencies
-COPY ./scripts/ ./scripts/
-COPY ./assets/ ./assets/
-COPY ./videojs-dependencies.yml ./videojs-dependencies.yml
+COPY ./invidious/scripts/ ./scripts/
+COPY ./invidious/assets/ ./assets/
+COPY ./invidious/videojs-dependencies.yml ./videojs-dependencies.yml
 RUN crystal build --release ./src/invidious.cr \
     --static --warnings all \
     --link-flags "-lxml2 -llzma"
