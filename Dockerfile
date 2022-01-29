@@ -12,6 +12,10 @@ COPY ./invidious/src/ ./src/
 # TODO: .git folder is required for building – this is destructive.
 # See definition of CURRENT_BRANCH, CURRENT_COMMIT and CURRENT_VERSION.
 COPY ./invidious/.git/ ./.git/
+# Required for fetching player dependencies
+COPY ./scripts/ ./scripts/
+COPY ./assets/ ./assets/
+COPY ./videojs-dependencies.yml ./videojs-dependencies.yml
 RUN crystal build --release ./src/invidious.cr \
     --static --warnings all \
     --link-flags "-lxml2 -llzma"
@@ -27,6 +31,7 @@ RUN mv -n config/config.example.yml config/config.yml
 RUN sed -i 's/host: \(127.0.0.1\|localhost\)/host: postgres/' config/config.yml
 COPY ./invidious/config/sql/ ./config/sql/
 COPY ./invidious/locales/ ./locales/
+COPY --from=builder /invidious/assets ./assets/
 COPY --from=builder /invidious/invidious .
 RUN chmod o+rX -R ./assets ./config ./locales
 
