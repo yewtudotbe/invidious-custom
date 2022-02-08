@@ -77,16 +77,16 @@ index 00000000..1264f50a
 +    <ul>
 +        <li>Bitcoin: <a href="bitcoin:1fyoJKdFo5cDPt21CGHW2RDQtcktQU9cL">1fyoJKdFo5cDPt21CGHW2RDQtcktQU9cL</a> (Segwit compatible)</li>
 +        <li>Bitcoin cash: <a href="bitcoincash:qz6qvjt9m4wqrqhyet3v3gljrpnys3wl2yxz0jfuu2">qz6qvjt9m4wqrqhyet3v3gljrpnys3wl2yxz0jfuu2</a></li>
-+        <li>Ethereum: <a href="ethereum:0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB">0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB</a></li>
++        <li>Ethereum: <a href="ethereum:0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB">0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB</a> (you can send any ERC20 token)</li>
 +        <li>Monero: <a href="monero:82VziQe69ynRNKZ2Bk7XcoYUA6Q1eRuPyGxV3gVWDju7EPkUXZE2oGTGWiah51cCKRMAmwTY11D6qcH3NpGtfdjcNccmXL5">82VziQe69ynRNKZ2Bk7XcoYUA6Q1eRuPyGxV3gVWDju7EPkUXZE2oGTGWiah51cCKRMAmwTY11D6qcH3NpGtfdjcNccmXL5</a></li>
 +        <li>Nano: <a href="nano:nano_3hrphgbgi4px1gfiftsphokukcj1tkk168it6xeetxpc9c7jt5e6i7kmjupi">nano_3hrphgbgi4px1gfiftsphokukcj1tkk168it6xeetxpc9c7jt5e6i7kmjupi</a></li>
 +        <li>Stellar: <a href="stellar:GB5LHWSIOM6BRO7CMWRMWVWJUGPCKVRAVINGUJHA7PYP3CHES2XCMDG5">GB5LHWSIOM6BRO7CMWRMWVWJUGPCKVRAVINGUJHA7PYP3CHES2XCMDG5</a></li>
 +        <li>Dogecoin: <a href="dogecoin:D6dsXSZEp1rkqvLAV41QxXTPPgvDSU2rjo">D6dsXSZEp1rkqvLAV41QxXTPPgvDSU2rjo</a></li>
 +        <li>Dash: <a href="dash:XmWHgigKxxNuCiiYfE5ZY6EoRDBwmfUJA5">XmWHgigKxxNuCiiYfE5ZY6EoRDBwmfUJA5</a></li>
 +        <li>Ripple: <a href="ripple:rwM9qRsciVWdvAfPjgJHFV4hpP6HtdCVi">rwM9qRsciVWdvAfPjgJHFV4hpP6HtdCVi</a></li>
-+        <li>Binance coin: <a href="bnb:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a></li>
++        <li>Binance coin: <a href="bnb:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a> (you can send any BEP20 token)</li>
 +        <li>Litecoin: <a href="litecoin:ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d">ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d</a></li>
-+        <li>USD Coin: <a href="usdcoin:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a></li>
++        <li>USD Coin: <a href="usdcoin:0xd415a7A9455DBf1a666F933c78A7325914E73C6b">0xd415a7A9455DBf1a666F933c78A7325914E73C6b</a> (ETH) - <a href="usdcoin:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a> (BNB)</li>
 +        <li>Wownero: <a href="wownero:Wo55BYoJFbucoaxybV3PJRKcCLXWhkWTm1p1a6k7Jfbt7f3xA6caGgNWwxjQhejcBZ4XH8Q6XiQhZDncT2DVeaEW2THSonTJH">Wo55BYoJFbucoaxybV3PJRKcCLXWhkWTm1p1a6k7Jfbt7f3xA6caGgNWwxjQhejcBZ4XH8Q6XiQhZDncT2DVeaEW2THSonTJH</a></li>
 +    </ul>
 +    <h4>Is your prefered payment method not listed?</h4>
