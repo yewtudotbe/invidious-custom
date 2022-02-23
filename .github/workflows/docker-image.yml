@@ -66,6 +66,12 @@ jobs:
         push: true
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
+    - run: |
+        cd invidious
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+        git am ../patches-api/*.patch
+
     - name: Build and push alpine docker image with API only
       id: docker_build_new_api
       uses: docker/build-push-action@v2

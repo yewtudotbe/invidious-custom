@@ -1,0 +1,26 @@
+From f93956863991873e4bfcb024df84c3c800a6f5e1 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Wed, 23 Feb 2022 23:48:17 +0100
+Subject: [PATCH 1/1] reuse port by default
+
+---
+ src/invidious.cr | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index d4878759..6038f281 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -562,4 +562,7 @@ Kemal.config.app_name = "Invidious"
+   Kemal.config.env = "production" if !ENV.has_key?("KEMAL_ENV")
+ {% end %}
+ 
+-Kemal.run
++Kemal.run do |config|
++  server = config.server.not_nil!
++  server.bind_tcp Kemal.config.port, reuse_port: true
++end
+\ No newline at end of file
+-- 
+2.35.1
+
