@@ -1,4 +1,4 @@
-From d73140a269ac269f355a5aed5f24a7491f2e3ac1 Mon Sep 17 00:00:00 2001
+From 477a778f4b5efcd70a58ee9c31b4b32e3e42bf13 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -6,7 +6,6 @@ Subject: [PATCH] limit feeds and delete materialized views
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
  config/sql/channel_videos.sql                |  8 +--
- docker-compose.yml                           |  1 -
  kubernetes/values.yaml                       |  1 -
  src/invidious.cr                             | 12 ----
  src/invidious/config.cr                      |  1 -
@@ -16,7 +15,7 @@ Subject: [PATCH] limit feeds and delete materialized views
  src/invidious/routes/search.cr               |  2 +
  src/invidious/search.cr                      | 19 ++---
  src/invidious/users.cr                       | 51 ++++++-------
- 12 files changed, 41 insertions(+), 140 deletions(-)
+ 11 files changed, 41 insertions(+), 139 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
@@ -54,18 +53,6 @@ index cd4e0ffdb..f2ac4876c 100644
 -  (ucid COLLATE pg_catalog."default");
 +  (ucid COLLATE pg_catalog."default", published);
  
-diff --git a/docker-compose.yml b/docker-compose.yml
-index c76c314c6..ac0f76c93 100644
---- a/docker-compose.yml
-+++ b/docker-compose.yml
-@@ -25,7 +25,6 @@ services:
-       INVIDIOUS_CONFIG: |
-         channel_threads: 1
-         check_tables: true
--        feed_threads: 1
-         db:
-           user: kemal
-           password: kemal
 diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
 index f241970c9..e8792ca6f 100644
 --- a/kubernetes/values.yaml
@@ -109,10 +96,10 @@ index d48787595..bf51ba4a7 100644
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 72e145da2..fac75db4a 100644
+index 280de7025..01c6ef8c4 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -57,7 +57,6 @@ class Config
+@@ -58,7 +58,6 @@ class Config
    include YAML::Serializable
  
    property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
