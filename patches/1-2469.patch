@@ -1,4 +1,4 @@
-From 477a778f4b5efcd70a58ee9c31b4b32e3e42bf13 Mon Sep 17 00:00:00 2001
+From cf51c5e98fb017fa073d4aa09f5a02cfbaf5b745 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -8,14 +8,14 @@ Subject: [PATCH] limit feeds and delete materialized views
  config/sql/channel_videos.sql                |  8 +--
  kubernetes/values.yaml                       |  1 -
  src/invidious.cr                             | 12 ----
- src/invidious/config.cr                      |  1 -
+ src/invidious/config.cr                      |  2 -
  src/invidious/jobs/refresh_feeds_job.cr      | 75 --------------------
  src/invidious/routes/account.cr              |  2 -
  src/invidious/routes/login.cr                |  3 -
  src/invidious/routes/search.cr               |  2 +
  src/invidious/search.cr                      | 19 ++---
  src/invidious/users.cr                       | 51 ++++++-------
- 11 files changed, 41 insertions(+), 139 deletions(-)
+ 11 files changed, 41 insertions(+), 140 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
@@ -66,10 +66,10 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index d48787595..bf51ba4a7 100644
+index 1bdf30974..2f5ecc7bc 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -82,14 +82,6 @@ Kemal.config.extra_options do |parser|
+@@ -84,14 +84,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -84,7 +84,7 @@ index d48787595..bf51ba4a7 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -133,10 +125,6 @@ if CONFIG.channel_threads > 0
+@@ -135,10 +127,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -96,17 +96,18 @@ index d48787595..bf51ba4a7 100644
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 280de7025..01c6ef8c4 100644
+index 93c4c0f7a..6fe72dbda 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -58,7 +58,6 @@ class Config
-   include YAML::Serializable
- 
-   property channel_threads : Int32 = 1           # Number of threads to use for crawling videos from channels (for updating subscriptions)
--  property feed_threads : Int32 = 1              # Number of threads to use for updating feeds
-   property output : String = "STDOUT"            # Log file path or STDOUT
-   property log_level : LogLevel = LogLevel::Info # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
-   property db : DBConfig? = nil                  # Database configuration with separate parameters (username, hostname, etc)
+@@ -62,8 +62,6 @@ class Config
+   # Time interval between two executions of the job that crawls channel videos (subscriptions update).
+   @[YAML::Field(converter: Preferences::TimeSpanConverter)]
+   property channel_refresh_interval : Time::Span = 30.minutes
+-  # Number of threads to use for updating feeds
+-  property feed_threads : Int32 = 1
+   # Log file path or STDOUT
+   property output : String = "STDOUT"
+   # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
 diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
 deleted file mode 100644
 index 4b52c9596..000000000
@@ -204,7 +205,7 @@ index 9bb731360..e3220cdb8 100644
      env.request.cookies.each do |cookie|
        cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index 65b337d14..59dadc555 100644
+index 99fc13a2b..ca223b425 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
 @@ -430,9 +430,6 @@ module Invidious::Routes::Login
