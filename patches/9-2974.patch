@@ -1,0 +1,22 @@
+From c2f2f07b6f9789dac4fb47537da5f21568a0e983 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 15 Mar 2022 21:49:22 +0100
+Subject: [PATCH] Resquest minified JSON from innertube
+
+---
+ src/invidious/yt_backend/youtube_api.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 5bbd9213f..d1b52a5ab 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -401,7 +401,7 @@ module YoutubeAPI
+     client_config ||= DEFAULT_CLIENT_CONFIG
+ 
+     # Query parameters
+-    url = "#{endpoint}?key=#{client_config.api_key}"
++    url = "#{endpoint}?key=#{client_config.api_key}&prettyPrint=false"
+ 
+     headers = HTTP::Headers{
+       "Content-Type"    => "application/json; charset=UTF-8",
