@@ -1,0 +1,57 @@
+From 85a004289e900bbc1e792ebadc664f06e7b1efce Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Tue, 29 Mar 2022 18:26:31 +0000
+Subject: [PATCH] new method for bypassing age restriction
+
+---
+ src/invidious/videos.cr                 | 4 ++--
+ src/invidious/yt_backend/youtube_api.cr | 7 +++++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 81fce5b8e..b50e7b2c4 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -585,7 +585,7 @@ struct Video
+ 
+   def allowed_regions
+     info
+-      .dig("microformat", "playerMicroformatRenderer", "availableCountries")
++      .dig?("microformat", "playerMicroformatRenderer", "availableCountries")
+       .try &.as_a.map &.as_s || [] of String
+   end
+ 
+@@ -876,7 +876,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil, context_
+ 
+   client_config = YoutubeAPI::ClientConfig.new(proxy_region: proxy_region)
+   if context_screen == "embed"
+-    client_config.client_type = YoutubeAPI::ClientType::WebScreenEmbed
++    client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
+   end
+ 
+   player_response = YoutubeAPI.player(video_id: video_id, params: "", client_config: client_config)
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index d1b52a5ab..2678ac6c0 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -14,6 +14,7 @@ module YoutubeAPI
+     Android
+     AndroidEmbeddedPlayer
+     AndroidScreenEmbed
++    TvHtml5ScreenEmbed
+   end
+ 
+   # List of hard-coded values used by the different clients
+@@ -60,6 +61,12 @@ module YoutubeAPI
+       api_key: "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+       screen:  "EMBED",
+     },
++    ClientType::TvHtml5ScreenEmbed => {
++      name:    "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
++      version: "2.0",
++      api_key: "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
++      screen:  "EMBED",
++    },
+   }
+ 
+   ####################################################################
