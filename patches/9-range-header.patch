@@ -1,0 +1,29 @@
+From b4ebe6f633e37770a9bd661281ebaf971dca78b2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Thu, 7 Apr 2022 20:45:04 +0000
+Subject: [PATCH 1/1] use range query string instead of header
+
+---
+ assets/js/player.js | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 74cdd987..73d08515 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -41,6 +41,12 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+ var save_player_pos_key = "save_player_pos";
+ 
+ videojs.Vhs.xhr.beforeRequest = function(options) {
++    if (options.headers){
++        if (options.headers.Range) {
++            options.uri = options.uri + '&range=' + options.headers.Range.split("=")[1];
++            delete options.headers.Range;
++        }
++    }
+     if (options.uri.indexOf('videoplayback') === -1 && options.uri.indexOf('local=true') === -1) {
+         options.uri = options.uri + '?local=true';
+     }
+-- 
+2.35.1
+
