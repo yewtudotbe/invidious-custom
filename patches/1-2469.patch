@@ -1,4 +1,4 @@
-From cf51c5e98fb017fa073d4aa09f5a02cfbaf5b745 Mon Sep 17 00:00:00 2001
+From bd2cfd7c463a793fa6c2625f588dfaee90c66382 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -13,9 +13,9 @@ Subject: [PATCH] limit feeds and delete materialized views
  src/invidious/routes/account.cr              |  2 -
  src/invidious/routes/login.cr                |  3 -
  src/invidious/routes/search.cr               |  2 +
- src/invidious/search.cr                      | 19 ++---
+ src/invidious/search/processors.cr           | 17 ++---
  src/invidious/users.cr                       | 51 ++++++-------
- 11 files changed, 41 insertions(+), 140 deletions(-)
+ 11 files changed, 43 insertions(+), 136 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
@@ -54,10 +54,10 @@ index cd4e0ffdb..f2ac4876c 100644
 +  (ucid COLLATE pg_catalog."default", published);
  
 diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
-index f241970c9..e8792ca6f 100644
+index 2dc4db2c4..5506c772d 100644
 --- a/kubernetes/values.yaml
 +++ b/kubernetes/values.yaml
-@@ -44,7 +44,6 @@ postgresql:
+@@ -49,7 +49,6 @@ postgresql:
  # Adapted from ../config/config.yml
  config:
    channel_threads: 1
@@ -66,10 +66,10 @@ index f241970c9..e8792ca6f 100644
      user: kemal
      password: kemal
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 1bdf30974..2f5ecc7bc 100644
+index 9f3d5d10f..6c6bd32ce 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -84,14 +84,6 @@ Kemal.config.extra_options do |parser|
+@@ -86,14 +86,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -84,7 +84,7 @@ index 1bdf30974..2f5ecc7bc 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -135,10 +127,6 @@ if CONFIG.channel_threads > 0
+@@ -141,10 +133,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -219,55 +219,49 @@ index 99fc13a2b..ca223b425 100644
  
          if env.request.cookies["PREFS"]?
 diff --git a/src/invidious/routes/search.cr b/src/invidious/routes/search.cr
-index 3f4c7e5ec..78bc5996f 100644
+index e60d00815..1d4911bde 100644
 --- a/src/invidious/routes/search.cr
 +++ b/src/invidious/routes/search.cr
-@@ -53,6 +53,8 @@ module Invidious::Routes::Search
- 
+@@ -51,6 +51,8 @@ module Invidious::Routes::Search
+     else
        user = env.get? "user"
  
 +      user = user ? user.as(User) : nil
 +
        begin
-         search_query, videos, operators = process_search_query(query, page, user, region: region)
+         videos = query.process
        rescue ex : ChannelSearchException
-diff --git a/src/invidious/search.cr b/src/invidious/search.cr
-index ae106bf6c..e1297488e 100644
---- a/src/invidious/search.cr
-+++ b/src/invidious/search.cr
-@@ -175,11 +175,6 @@ def produce_channel_search_continuation(ucid, query, page)
- end
+diff --git a/src/invidious/search/processors.cr b/src/invidious/search/processors.cr
+index d1409c06c..c14c36b84 100644
+--- a/src/invidious/search/processors.cr
++++ b/src/invidious/search/processors.cr
+@@ -45,18 +45,19 @@ module Invidious::Search
  
- def process_search_query(query, page, user, region)
--  if user
--    user = user.as(Invidious::User)
--    view_name = "subscriptions_#{sha256(user.email)}"
--  end
--
-   channel = nil
-   content_type = "all"
-   date = ""
-@@ -217,14 +212,14 @@ def process_search_query(query, page, user, region)
-   if channel
-     items = channel_search(search_query, page, channel)
-   elsif subscriptions
--    if view_name
-+    if user
-       items = PG_DB.query_all("SELECT id,title,published,updated,ucid,author,length_seconds FROM (
--      SELECT *,
--      to_tsvector(#{view_name}.title) ||
--      to_tsvector(#{view_name}.author)
--      as document
--      FROM #{view_name}
--      ) v_search WHERE v_search.document @@ plainto_tsquery($1) LIMIT 20 OFFSET $2;", search_query, (page - 1) * 20, as: ChannelVideo)
-+        SELECT cv.*, to_tsvector(cv.title) || to_tsvector(cv.author) AS document
-+        FROM channel_videos cv
-+        JOIN users ON cv.ucid = any(users.subscriptions)
-+        WHERE users.email = $1 AND published > now() - interval '1 month'
-+        ORDER BY published
-+      ) v_search WHERE v_search.document @@ plainto_tsquery($2) LIMIT 20 OFFSET $3;", user.email, search_query, (page - 1) * 20, as: ChannelVideo)
-     else
-       items = [] of ChannelVideo
+     # Search inside of user subscriptions
+     def subscriptions(query : Query, user : Invidious::User) : Array(ChannelVideo)
+-      view_name = "subscriptions_#{sha256(user.email)}"
+ 
+       return PG_DB.query_all("
+         SELECT id,title,published,updated,ucid,author,length_seconds
+         FROM (
+-          SELECT *,
+-          to_tsvector(#{view_name}.title) ||
+-          to_tsvector(#{view_name}.author)
+-          as document
+-          FROM #{view_name}
+-        ) v_search WHERE v_search.document @@ plainto_tsquery($1) LIMIT 20 OFFSET $2;",
+-        query.text, (query.page - 1) * 20,
++          SELECT cv.*,
++          to_tsvector(cv.title) ||
++          to_tsvector(cv.author) AS document
++          FROM channel_videos cv
++          JOIN users ON cv.ucid = any(users.subscriptions)
++          WHERE users.email = $1 AND published > now() - interval '1 month'
++          ORDER BY published
++        ) v_search WHERE v_search.document @@ plainto_tsquery($2) LIMIT 20 OFFSET $3;",
++        user.email, query.text, (query.page - 1) * 20,
+         as: ChannelVideo
+       )
      end
 diff --git a/src/invidious/users.cr b/src/invidious/users.cr
 index b763596bc..6f82ead33 100644
