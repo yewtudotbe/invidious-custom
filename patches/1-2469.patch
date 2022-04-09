@@ -1,4 +1,4 @@
-From bd2cfd7c463a793fa6c2625f588dfaee90c66382 Mon Sep 17 00:00:00 2001
+From 6a19f66c5380488896c341d88a52b99601008d8c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Tue, 19 Oct 2021 07:12:15 +0000
 Subject: [PATCH] limit feeds and delete materialized views
@@ -13,9 +13,9 @@ Subject: [PATCH] limit feeds and delete materialized views
  src/invidious/routes/account.cr              |  2 -
  src/invidious/routes/login.cr                |  3 -
  src/invidious/routes/search.cr               |  2 +
- src/invidious/search/processors.cr           | 17 ++---
+ src/invidious/search/processors.cr           | 18 ++---
  src/invidious/users.cr                       | 51 ++++++-------
- 11 files changed, 43 insertions(+), 136 deletions(-)
+ 11 files changed, 43 insertions(+), 137 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
@@ -232,15 +232,15 @@ index e60d00815..1d4911bde 100644
          videos = query.process
        rescue ex : ChannelSearchException
 diff --git a/src/invidious/search/processors.cr b/src/invidious/search/processors.cr
-index d1409c06c..c14c36b84 100644
+index d1409c06c..1ff6f95a9 100644
 --- a/src/invidious/search/processors.cr
 +++ b/src/invidious/search/processors.cr
-@@ -45,18 +45,19 @@ module Invidious::Search
+@@ -45,18 +45,18 @@ module Invidious::Search
  
      # Search inside of user subscriptions
      def subscriptions(query : Query, user : Invidious::User) : Array(ChannelVideo)
 -      view_name = "subscriptions_#{sha256(user.email)}"
- 
+-
        return PG_DB.query_all("
          SELECT id,title,published,updated,ucid,author,length_seconds
          FROM (
