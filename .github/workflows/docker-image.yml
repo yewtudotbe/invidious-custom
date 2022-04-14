@@ -34,7 +34,8 @@ jobs:
         ref: 'master'
         path: 'invidious'
 
-    - run: |
+    - name: patch invidious main repo
+      run: |
         cd invidious
         git config --global user.email "you@example.com"
         git config --global user.name "Your Name"
@@ -66,7 +67,8 @@ jobs:
         push: true
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
-    - run: |
+    - name: patch invidious API repo
+      run: |
         cd invidious
         git config --global user.email "you@example.com"
         git config --global user.name "Your Name"
