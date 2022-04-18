@@ -1,37 +1,24 @@
-From acf77170dfc9fa98222e96f4423f2ab87b4a1937 Mon Sep 17 00:00:00 2001
+From 21984842dc026a8225af88676f33bcd0a473a061 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Fri, 8 Apr 2022 16:44:09 +0000
 Subject: [PATCH] bump videojs to 7.12.1 and improve playback exp related to
  #2848
 
 ---
- assets/js/player.js                           | 63 ++++++++++++-------
+ assets/js/player.js                           | 57 ++++++++++++-------
  ...silvermine-videojs-quality-selector.min.js |  4 +-
  src/invidious/routes/api/manifest.cr          |  4 +-
  src/invidious/views/components/player.ecr     | 18 +++++-
  src/invidious/views/embed.ecr                 |  3 +-
  src/invidious/views/watch.ecr                 |  3 +-
  videojs-dependencies.yml                      |  8 +--
- 7 files changed, 69 insertions(+), 34 deletions(-)
+ 7 files changed, 63 insertions(+), 34 deletions(-)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
-index 74cdd9876..1e00abfe0 100644
+index 74cdd9876..df20dc7c2 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
-@@ -41,6 +41,12 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
- var save_player_pos_key = "save_player_pos";
- 
- videojs.Vhs.xhr.beforeRequest = function(options) {
-+    if (options.headers) {
-+        if (options.headers.Range) {
-+            options.uri = options.uri + '&range=' + options.headers.Range.split("=")[1];
-+            delete options.headers.Range;
-+        }
-+    }
-     if (options.uri.indexOf('videoplayback') === -1 && options.uri.indexOf('local=true') === -1) {
-         options.uri = options.uri + '?local=true';
-     }
-@@ -49,6 +55,42 @@ videojs.Vhs.xhr.beforeRequest = function(options) {
+@@ -49,6 +49,42 @@ videojs.Vhs.xhr.beforeRequest = function(options) {
  
  var player = videojs('player', options);
  
@@ -74,7 +61,7 @@ index 74cdd9876..1e00abfe0 100644
  /**
   * Function for add time argument to url
   * @param {String} url
-@@ -144,27 +186,6 @@ if (isMobile()) {
+@@ -144,27 +180,6 @@ if (isMobile()) {
    	})
  }
  
