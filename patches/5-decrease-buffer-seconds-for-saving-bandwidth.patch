@@ -1,6 +1,6 @@
-From 8518074d993f1cedc5b0c51852ad6c53e7c39e18 Mon Sep 17 00:00:00 2001
-From: Emilien Devos <contact@emiliendevos.be>
-Date: Tue, 8 Mar 2022 00:17:28 +0100
+From 9139da5a877cabba7df2035b3c06f675816a3aff Mon Sep 17 00:00:00 2001
+From: Emilien Devos <github@emiliendevos.be>
+Date: Fri, 22 Apr 2022 22:45:54 +0200
 Subject: [PATCH 1/1] decrease buffer seconds for saving bandwidth
 
 ---
@@ -8,7 +8,7 @@ Subject: [PATCH 1/1] decrease buffer seconds for saving bandwidth
  1 file changed, 3 insertions(+)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
-index a1a2cd16..489205cf 100644
+index f5bec651..bd4deb0d 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
 @@ -47,6 +47,9 @@ videojs.Vhs.xhr.beforeRequest = function(options) {
@@ -20,7 +20,6 @@ index a1a2cd16..489205cf 100644
 +
  var player = videojs('player', options);
  
- /**
+ player.on('error', () => {
 -- 
-2.35.1
-
+2.32.0 (Apple Git-132)
