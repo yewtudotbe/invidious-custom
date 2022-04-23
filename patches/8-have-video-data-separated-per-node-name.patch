@@ -1,14 +1,15 @@
-From b93f2243be52dd33ccd02012e6e8528f9423048c Mon Sep 17 00:00:00 2001
+From c766804112ac85680a18e86c4a82f8504fc4959e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
 Date: Sat, 23 Apr 2022 18:35:53 +0000
 Subject: [PATCH 1/1] have video data separated per node name
 
 ---
- src/invidious/database/videos.cr | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ src/invidious/database/videos.cr | 9 +++++----
+ src/invidious/videos.cr          | 1 +
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/src/invidious/database/videos.cr b/src/invidious/database/videos.cr
-index e1fa01c3..4d67b2e0 100644
+index e1fa01c3..e02b4de8 100644
 --- a/src/invidious/database/videos.cr
 +++ b/src/invidious/database/videos.cr
 @@ -10,7 +10,7 @@ module Invidious::Database::Videos
@@ -16,7 +17,7 @@ index e1fa01c3..4d67b2e0 100644
      SQL
  
 -    PG_DB.exec(request, video.id, video.info.to_json, video.updated)
-+    PG_DB.exec(request, video.id + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
++    PG_DB.exec(request, video.id + "-" + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
    end
  
    def delete(id)
@@ -25,7 +26,7 @@ index e1fa01c3..4d67b2e0 100644
      SQL
  
 -    PG_DB.exec(request, id)
-+    PG_DB.exec(request, id + ENV.fetch("NODE_NAME", ""))
++    PG_DB.exec(request, id + "-" + ENV.fetch("NODE_NAME", ""))
    end
  
    def update(video : Video)
@@ -34,17 +35,31 @@ index e1fa01c3..4d67b2e0 100644
      SQL
  
 -    PG_DB.exec(request, video.id, video.info.to_json, video.updated)
-+    PG_DB.exec(request, video.id + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
++    PG_DB.exec(request, video.id + "-" + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
    end
  
    def select(id : String) : Video?
-@@ -38,6 +38,6 @@ module Invidious::Database::Videos
+@@ -38,6 +38,7 @@ module Invidious::Database::Videos
        WHERE id = $1
      SQL
  
 -    return PG_DB.query_one?(request, id, as: Video)
-+    return PG_DB.query_one?(request, id + ENV.fetch("NODE_NAME", ""), as: Video)
++    #puts (PG_DB.query_one?(request, id + "-" + ENV.fetch("NODE_NAME", ""), as: Video))["id"]
++    return PG_DB.query_one?(request, id + "-" + ENV.fetch("NODE_NAME", ""), as: Video)
    end
  end
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 31ae90c7..1d0ff0ba 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -1093,6 +1093,7 @@ def get_video(id, refresh = true, region = nil, force_refresh = false)
+     Invidious::Database::Videos.insert(video) if !region
+   end
+ 
++  video.id = id
+   return video
+ rescue DB::Error
+   # Avoid common `DB::PoolRetryAttemptsExceeded` error and friends
 -- 
 2.35.1
+
