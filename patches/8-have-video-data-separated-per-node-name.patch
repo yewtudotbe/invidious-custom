@@ -1,0 +1,50 @@
+From b93f2243be52dd33ccd02012e6e8528f9423048c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Sat, 23 Apr 2022 18:35:53 +0000
+Subject: [PATCH 1/1] have video data separated per node name
+
+---
+ src/invidious/database/videos.cr | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/invidious/database/videos.cr b/src/invidious/database/videos.cr
+index e1fa01c3..4d67b2e0 100644
+--- a/src/invidious/database/videos.cr
++++ b/src/invidious/database/videos.cr
+@@ -10,7 +10,7 @@ module Invidious::Database::Videos
+       ON CONFLICT (id) DO NOTHING
+     SQL
+ 
+-    PG_DB.exec(request, video.id, video.info.to_json, video.updated)
++    PG_DB.exec(request, video.id + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
+   end
+ 
+   def delete(id)
+@@ -19,7 +19,7 @@ module Invidious::Database::Videos
+       WHERE id = $1
+     SQL
+ 
+-    PG_DB.exec(request, id)
++    PG_DB.exec(request, id + ENV.fetch("NODE_NAME", ""))
+   end
+ 
+   def update(video : Video)
+@@ -29,7 +29,7 @@ module Invidious::Database::Videos
+       WHERE id = $1
+     SQL
+ 
+-    PG_DB.exec(request, video.id, video.info.to_json, video.updated)
++    PG_DB.exec(request, video.id + ENV.fetch("NODE_NAME", ""), video.info.to_json, video.updated)
+   end
+ 
+   def select(id : String) : Video?
+@@ -38,6 +38,6 @@ module Invidious::Database::Videos
+       WHERE id = $1
+     SQL
+ 
+-    return PG_DB.query_one?(request, id, as: Video)
++    return PG_DB.query_one?(request, id + ENV.fetch("NODE_NAME", ""), as: Video)
+   end
+ end
+-- 
+2.35.1
