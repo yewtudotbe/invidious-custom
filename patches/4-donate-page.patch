@@ -56,7 +56,7 @@ new file mode 100644
 index 00000000..1264f50a
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,36 @@
 +<% content_for "header" do %>
 +<title>Donate - Invidious</title>
 +<% end %>
@@ -83,6 +83,7 @@ index 00000000..1264f50a
 +        <li>Stellar: <a href="stellar:GB5LHWSIOM6BRO7CMWRMWVWJUGPCKVRAVINGUJHA7PYP3CHES2XCMDG5">GB5LHWSIOM6BRO7CMWRMWVWJUGPCKVRAVINGUJHA7PYP3CHES2XCMDG5</a></li>
 +        <li>Dogecoin: <a href="dogecoin:D6dsXSZEp1rkqvLAV41QxXTPPgvDSU2rjo">D6dsXSZEp1rkqvLAV41QxXTPPgvDSU2rjo</a></li>
 +        <li>Dash: <a href="dash:XmWHgigKxxNuCiiYfE5ZY6EoRDBwmfUJA5">XmWHgigKxxNuCiiYfE5ZY6EoRDBwmfUJA5</a></li>
++        <li>Decred: <a href="dcr:DsY4tZLcikXjJwdLBFr2pYWgGPatY9y81cZ">DsY4tZLcikXjJwdLBFr2pYWgGPatY9y81cZ</a></li>
 +        <li>Ripple: <a href="ripple:rwM9qRsciVWdvAfPjgJHFV4hpP6HtdCVi">rwM9qRsciVWdvAfPjgJHFV4hpP6HtdCVi</a></li>
 +        <li>Binance coin: <a href="bnb:bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq">bnb10vd22k3ujp9ezjc6s8x7vqvuh02hlvcwqtsepq</a> (you can send any BEP20 token)</li>
 +        <li>Litecoin: <a href="litecoin:ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d">ltc1qre3xwwjsnctpfrx6eu0y77nca3cwlhe8kzy27d</a></li>
