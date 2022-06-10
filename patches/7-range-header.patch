@@ -1,6 +1,6 @@
-From fe858211e382daa8acefc61bbfbc26a5925d521c Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?=C3=89milien=20Devos?= <github@emiliendevos.be>
-Date: Thu, 28 Apr 2022 09:48:19 +0000
+From 0b438cd5cfca597362d68e730d536046ba881f7d Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Fri, 10 Jun 2022 17:40:42 +0200
 Subject: [PATCH 1/1] use range query string instead of header
 
 ---
@@ -8,7 +8,7 @@ Subject: [PATCH 1/1] use range query string instead of header
  1 file changed, 6 insertions(+)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
-index 6ddb1158..94e2c9a9 100644
+index 7d099e66..18f34e97 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
 @@ -42,6 +42,12 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
@@ -21,9 +21,9 @@ index 6ddb1158..94e2c9a9 100644
 +            delete options.headers.Range;
 +        }
 +    }
-     if (options.uri.indexOf('videoplayback') === -1 && options.uri.indexOf('local=true') === -1) {
-         options.uri = options.uri + '?local=true';
-     }
+     // set local if requested not videoplayback
+     if (!options.uri.includes('videoplayback')) {
+         if (!options.uri.includes('local=true'))
 -- 
-2.35.1
+2.36.1
 
