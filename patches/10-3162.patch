@@ -1,0 +1,361 @@
+From 140b6c1227754356145acd7b76820e3921745ef8 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Thu, 23 Jun 2022 02:13:22 +0800
+Subject: [PATCH 01/11] DASH playback force highest quality m4a
+
+Since VideoJS is unable to handle adaptive audio quality, the best audo quality is forced for every video quality.
+---
+ src/invidious/routes/api/manifest.cr | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index 8bc36946b..8b5bfc06c 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -61,7 +61,18 @@ module Invidious::Routes::API::Manifest
+             next if mime_streams.empty?
+ 
+             xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true) do
++              # ignore the 64k m4a stream, only consider the 128k m4a stream
++              best_m4a_stream = mime_streams[0]
++              best_m4a_stream_bitrate = 0
+               mime_streams.each do |fmt|
++                bandwidth = fmt["bitrate"].as_i
++                if (bandwidth > best_m4a_stream_bitrate)
++                  best_m4a_stream_bitrate = bandwidth
++                  best_m4a_stream = fmt
++                end
++              end
++      
++              [best_m4a_stream].each do |fmt|
+                 # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+                 next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+ 
+
+From 81abebd14493d4207a663d6f575d945a23b03170 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Thu, 23 Jun 2022 02:27:46 +0800
+Subject: [PATCH 02/11] Highest quality m4a on audio only mode as default
+
+Audio mode will automatically select highest quality m4a as default.
+---
+ src/invidious/views/components/player.ecr | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index fffefc9a3..a342097ef 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -7,14 +7,25 @@
+         <source src="<%= URI.parse(hlsvp).request_target %><% if params.local %>?local=true<% end %>" type="application/x-mpegURL" label="livestream">
+     <% else %>
+         <% if params.listen %>
+-            <% audio_streams.each_with_index do |fmt, i|
++            <% # ignore the 64k m4a stream, only consider the 128k m4a stream
++               best_m4a_stream_index = 0
++               best_m4a_stream_bitrate = 0
++               audio_streams.each_with_index do |fmt, i|
++                 bandwidth = fmt["bitrate"].as_i
++                 if (fmt["mimeType"].as_s.starts_with?("audio/mp4") && bandwidth > best_m4a_stream_bitrate)
++                   best_m4a_stream_bitrate = bandwidth
++                   best_m4a_stream_index = i
++                 end
++               end
++
++               audio_streams.each_with_index do |fmt, i|
+                 src_url  = "/latest_version?id=#{video.id}&itag=#{fmt["itag"]}"
+                 src_url += "&local=true" if params.local
+ 
+                 bitrate = fmt["bitrate"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+ 
+-                selected = i == 0 ? true : false
++                selected = i == best_m4a_stream_index ? true : false
+             %>
+                 <source src="<%= src_url %>" type='<%= mimetype %>' label="<%= bitrate %>k" selected="<%= selected %>">
+                 <% if !params.local && !CONFIG.disabled?("local") %>
+
+From 3013782b7b39295b34c3f5a72274efc625748a7f Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Thu, 23 Jun 2022 03:03:54 +0800
+Subject: [PATCH 03/11] formatting
+
+---
+ src/invidious/routes/api/manifest.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index 8b5bfc06c..b8466df1e 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -71,7 +71,7 @@ module Invidious::Routes::API::Manifest
+                   best_m4a_stream = fmt
+                 end
+               end
+-      
++
+               [best_m4a_stream].each do |fmt|
+                 # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+                 next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+
+From c75bf35f59864c9f7e37816d657e913f29b40123 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Fri, 24 Jun 2022 17:26:30 +0800
+Subject: [PATCH 04/11] Update DASH format to serve 2 audio to player
+
+player.audioTracks() can successfully show
+tracks_: Array(2)
+---
+ src/invidious/routes/api/manifest.cr | 20 ++++----------------
+ 1 file changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index b8466df1e..476ff65a6 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -46,7 +46,7 @@ module Invidious::Routes::API::Manifest
+       end
+     end
+ 
+-    audio_streams = video.audio_streams
++    audio_streams = video.audio_streams.sort_by { |stream| {stream["bitrate"].as_i} }.reverse!
+     video_streams = video.video_streams.sort_by { |stream| {stream["width"].as_i, stream["fps"].as_i} }.reverse!
+ 
+     manifest = XML.build(indent: "  ", encoding: "UTF-8") do |xml|
+@@ -60,19 +60,8 @@ module Invidious::Routes::API::Manifest
+             mime_streams = audio_streams.select { |stream| stream["mimeType"].as_s.starts_with? mime_type }
+             next if mime_streams.empty?
+ 
+-            xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true) do
+-              # ignore the 64k m4a stream, only consider the 128k m4a stream
+-              best_m4a_stream = mime_streams[0]
+-              best_m4a_stream_bitrate = 0
+-              mime_streams.each do |fmt|
+-                bandwidth = fmt["bitrate"].as_i
+-                if (bandwidth > best_m4a_stream_bitrate)
+-                  best_m4a_stream_bitrate = bandwidth
+-                  best_m4a_stream = fmt
+-                end
+-              end
+-
+-              [best_m4a_stream].each do |fmt|
++            mime_streams.each do |fmt|
++              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, lang: i.to_s) do
+                 # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+                 next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+ 
+@@ -90,9 +79,8 @@ module Invidious::Routes::API::Manifest
+                   end
+                 end
+               end
++              i += 1
+             end
+-
+-            i += 1
+           end
+ 
+           potential_heights = {4320, 2160, 1440, 1080, 720, 480, 360, 240, 144}
+
+From a62adccd3d2e80377d200cb3890d00eea6dd5c8b Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 16:33:02 +0800
+Subject: [PATCH 05/11] change lang to label
+
+lang has to be BCP 47 standard. Using label also can let video.js know there are 2 audio tracks.
+---
+ src/invidious/routes/api/manifest.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index 476ff65a6..b9f816225 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -61,7 +61,7 @@ module Invidious::Routes::API::Manifest
+             next if mime_streams.empty?
+ 
+             mime_streams.each do |fmt|
+-              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, lang: i.to_s) do
++              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, label: i.to_s) do
+                 # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+                 next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+ 
+
+From 32ecf30c821bab26d4adb83714dedb4e01253f99 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 17:19:11 +0800
+Subject: [PATCH 06/11] Add audioTrackButton
+
+---
+ assets/js/player.js | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 7d099e663..c2a5f42e2 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -17,6 +17,7 @@ var options = {
+             'remainingTimeDisplay',
+             'Spacer',
+             'captionsButton',
++            'audioTrackButton',
+             'qualitySelector',
+             'playbackRateMenuButton',
+             'fullscreenToggle'
+
+From 09ff370ddca17aae9baf73af4c920c7790f1e70a Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 17:19:40 +0800
+Subject: [PATCH 07/11] Change player.css order
+
+---
+ assets/css/player.css | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/assets/css/player.css b/assets/css/player.css
+index 304375b54..8a7cfdabb 100644
+--- a/assets/css/player.css
++++ b/assets/css/player.css
+@@ -101,21 +101,25 @@ ul.vjs-menu-content::-webkit-scrollbar {
+   order: 2;
+ }
+ 
++.vjs-audio-button {
++  order: 3;
++}
++
+ .vjs-quality-selector,
+ .video-js .vjs-http-source-selector {
+-  order: 3;
++  order: 4;
+ }
+ 
+ .vjs-playback-rate {
+-  order: 4;
++  order: 5;
+ }
+ 
+ .vjs-share-control {
+-  order: 5;
++  order: 6;
+ }
+ 
+ .vjs-fullscreen-control {
+-  order: 6;
++  order: 7;
+ }
+ 
+ .vjs-playback-rate > .vjs-menu {
+
+From e0f6988eb59b08341f781ffb2b6bf47f6ee6ab16 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 18:52:34 +0800
+Subject: [PATCH 08/11] DASH Default to high quality m4a
+
+---
+ src/invidious/routes/api/manifest.cr | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index b9f816225..ca72be26f 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -61,7 +61,7 @@ module Invidious::Routes::API::Manifest
+             next if mime_streams.empty?
+ 
+             mime_streams.each do |fmt|
+-              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, label: i.to_s) do
++              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, label: fmt["bitrate"].to_s + "k") do
+                 # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+                 next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+ 
+@@ -70,6 +70,8 @@ module Invidious::Routes::API::Manifest
+                 itag = fmt["itag"].as_i
+                 url = fmt["url"].as_s
+ 
++                xml.element("Role", schemeIdUri: "urn:mpeg:dash:role:2011", value: i == 0 ? "main" : "alternate")
++
+                 xml.element("Representation", id: fmt["itag"], codecs: codecs, bandwidth: bandwidth) do
+                   xml.element("AudioChannelConfiguration", schemeIdUri: "urn:mpeg:dash:23003:3:audio_channel_configuration:2011",
+                     value: "2")
+
+From c7d468578f1c7cd8f166321a81b7bcc121483ec8 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 19:03:35 +0800
+Subject: [PATCH 09/11] Update MobileUi
+
+---
+ assets/js/player.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index c2a5f42e2..0416e2b0d 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -148,7 +148,7 @@ function isMobile() {
+ if (isMobile()) {
+     player.mobileUi();
+ 
+-    var buttons = ['playToggle', 'volumePanel', 'captionsButton'];
++    var buttons = ['playToggle', 'volumePanel', 'captionsButton', 'audioTrackButton'];
+ 
+     if (video_data.params.quality !== 'dash') buttons.push('qualitySelector');
+ 
+
+From cc9ce916c6e8119eb36b54917215d2ef53f64793 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 19:24:20 +0800
+Subject: [PATCH 10/11] Update MobileUi
+
+---
+ assets/js/player.js | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 0416e2b0d..1b01ac368 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -148,9 +148,10 @@ function isMobile() {
+ if (isMobile()) {
+     player.mobileUi();
+ 
+-    var buttons = ['playToggle', 'volumePanel', 'captionsButton', 'audioTrackButton'];
++    var buttons = ['playToggle', 'volumePanel', 'captionsButton'];
+ 
+-    if (video_data.params.quality !== 'dash') buttons.push('qualitySelector');
++    if (!video_data.params.listen && video_data.params.quality === 'dash') buttons.push('audioTrackButton');
++    if (video_data.params.listen || video_data.params.quality !== 'dash') buttons.push('qualitySelector');
+ 
+     // Create new control bar object for operation buttons
+     const ControlBar = videojs.getComponent('controlBar');
+@@ -177,7 +178,7 @@ if (isMobile()) {
+         var share_element = document.getElementsByClassName('vjs-share-control')[0];
+         operations_bar_element.append(share_element);
+ 
+-        if (video_data.params.quality === 'dash') {
++        if (!video_data.params.listen && video_data.params.quality === 'dash') {
+             var http_source_selector = document.getElementsByClassName('vjs-http-source-selector vjs-menu-button')[0];
+             operations_bar_element.append(http_source_selector);
+         }
+
+From 3f1d88282ed2878608032ec605fe17e61197d8ed Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 19:26:14 +0800
+Subject: [PATCH 11/11] Update some comments
+
+---
+ src/invidious/views/components/player.ecr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index a342097ef..9f42ae778 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -7,7 +7,7 @@
+         <source src="<%= URI.parse(hlsvp).request_target %><% if params.local %>?local=true<% end %>" type="application/x-mpegURL" label="livestream">
+     <% else %>
+         <% if params.listen %>
+-            <% # ignore the 64k m4a stream, only consider the 128k m4a stream
++            <% # default to 128k m4a stream
+                best_m4a_stream_index = 0
+                best_m4a_stream_bitrate = 0
+                audio_streams.each_with_index do |fmt, i|
