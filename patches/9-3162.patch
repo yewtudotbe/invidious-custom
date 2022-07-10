@@ -278,29 +278,6 @@ index b9f816225..ca72be26f 100644
                    xml.element("AudioChannelConfiguration", schemeIdUri: "urn:mpeg:dash:23003:3:audio_channel_configuration:2011",
                      value: "2")
 
-From c7d468578f1c7cd8f166321a81b7bcc121483ec8 Mon Sep 17 00:00:00 2001
-From: 138138138 <78271024+138138138@users.noreply.github.com>
-Date: Sat, 25 Jun 2022 19:03:35 +0800
-Subject: [PATCH 09/13] Update MobileUi
-
----
- assets/js/player.js | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/assets/js/player.js b/assets/js/player.js
-index c2a5f42e2..0416e2b0d 100644
---- a/assets/js/player.js
-+++ b/assets/js/player.js
-@@ -148,7 +148,7 @@ function isMobile() {
- if (isMobile()) {
-     player.mobileUi();
- 
--    var buttons = ['playToggle', 'volumePanel', 'captionsButton'];
-+    var buttons = ['playToggle', 'volumePanel', 'captionsButton', 'audioTrackButton'];
- 
-     if (video_data.params.quality !== 'dash') buttons.push('qualitySelector');
- 
-
 From cc9ce916c6e8119eb36b54917215d2ef53f64793 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 19:24:20 +0800
