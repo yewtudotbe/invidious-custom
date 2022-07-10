@@ -1,7 +1,7 @@
 From 140b6c1227754356145acd7b76820e3921745ef8 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Thu, 23 Jun 2022 02:13:22 +0800
-Subject: [PATCH 01/11] DASH playback force highest quality m4a
+Subject: [PATCH 01/13] DASH playback force highest quality m4a
 
 Since VideoJS is unable to handle adaptive audio quality, the best audo quality is forced for every video quality.
 ---
@@ -35,7 +35,7 @@ index 8bc36946b..8b5bfc06c 100644
 From 81abebd14493d4207a663d6f575d945a23b03170 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Thu, 23 Jun 2022 02:27:46 +0800
-Subject: [PATCH 02/11] Highest quality m4a on audio only mode as default
+Subject: [PATCH 02/13] Highest quality m4a on audio only mode as default
 
 Audio mode will automatically select highest quality m4a as default.
 ---
@@ -78,7 +78,7 @@ index fffefc9a3..a342097ef 100644
 From 3013782b7b39295b34c3f5a72274efc625748a7f Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Thu, 23 Jun 2022 03:03:54 +0800
-Subject: [PATCH 03/11] formatting
+Subject: [PATCH 03/13] formatting
 
 ---
  src/invidious/routes/api/manifest.cr | 2 +-
@@ -101,7 +101,7 @@ index 8b5bfc06c..b8466df1e 100644
 From c75bf35f59864c9f7e37816d657e913f29b40123 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Fri, 24 Jun 2022 17:26:30 +0800
-Subject: [PATCH 04/11] Update DASH format to serve 2 audio to player
+Subject: [PATCH 04/13] Update DASH format to serve 2 audio to player
 
 player.audioTracks() can successfully show
 tracks_: Array(2)
@@ -159,7 +159,7 @@ index b8466df1e..476ff65a6 100644
 From a62adccd3d2e80377d200cb3890d00eea6dd5c8b Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 16:33:02 +0800
-Subject: [PATCH 05/11] change lang to label
+Subject: [PATCH 05/13] change lang to label
 
 lang has to be BCP 47 standard. Using label also can let video.js know there are 2 audio tracks.
 ---
@@ -183,7 +183,7 @@ index 476ff65a6..b9f816225 100644
 From 32ecf30c821bab26d4adb83714dedb4e01253f99 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 17:19:11 +0800
-Subject: [PATCH 06/11] Add audioTrackButton
+Subject: [PATCH 06/13] Add audioTrackButton
 
 ---
  assets/js/player.js | 1 +
@@ -205,7 +205,7 @@ index 7d099e663..c2a5f42e2 100644
 From 09ff370ddca17aae9baf73af4c920c7790f1e70a Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 17:19:40 +0800
-Subject: [PATCH 07/11] Change player.css order
+Subject: [PATCH 07/13] Change player.css order
 
 ---
  assets/css/player.css | 12 ++++++++----
@@ -249,7 +249,7 @@ index 304375b54..8a7cfdabb 100644
 From e0f6988eb59b08341f781ffb2b6bf47f6ee6ab16 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 18:52:34 +0800
-Subject: [PATCH 08/11] DASH Default to high quality m4a
+Subject: [PATCH 08/13] DASH Default to high quality m4a
 
 ---
  src/invidious/routes/api/manifest.cr | 4 +++-
@@ -281,7 +281,7 @@ index b9f816225..ca72be26f 100644
 From c7d468578f1c7cd8f166321a81b7bcc121483ec8 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 19:03:35 +0800
-Subject: [PATCH 09/11] Update MobileUi
+Subject: [PATCH 09/13] Update MobileUi
 
 ---
  assets/js/player.js | 2 +-
@@ -304,7 +304,7 @@ index c2a5f42e2..0416e2b0d 100644
 From cc9ce916c6e8119eb36b54917215d2ef53f64793 Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 19:24:20 +0800
-Subject: [PATCH 10/11] Update MobileUi
+Subject: [PATCH 10/13] Update MobileUi
 
 ---
  assets/js/player.js | 7 ++++---
@@ -340,7 +340,7 @@ index 0416e2b0d..1b01ac368 100644
 From 3f1d88282ed2878608032ec605fe17e61197d8ed Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 19:26:14 +0800
-Subject: [PATCH 11/11] Update some comments
+Subject: [PATCH 11/13] Update some comments
 
 ---
  src/invidious/views/components/player.ecr | 2 +-
@@ -359,3 +359,58 @@ index a342097ef..9f42ae778 100644
                 best_m4a_stream_index = 0
                 best_m4a_stream_bitrate = 0
                 audio_streams.each_with_index do |fmt, i|
+
+From b19beac5b40bd1efbef1882b2160252ebf9a3134 Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sun, 10 Jul 2022 16:29:50 +0800
+Subject: [PATCH 12/13] Update src/invidious/views/components/player.ecr
+
+better syntax
+
+Co-authored-by: Samantaz Fox <coding@samantaz.fr>
+---
+ src/invidious/views/components/player.ecr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index 9f42ae778..c3c02df07 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -25,7 +25,7 @@
+                 bitrate = fmt["bitrate"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+ 
+-                selected = i == best_m4a_stream_index ? true : false
++                selected = (i == best_m4a_stream_index)
+             %>
+                 <source src="<%= src_url %>" type='<%= mimetype %>' label="<%= bitrate %>k" selected="<%= selected %>">
+                 <% if !params.local && !CONFIG.disabled?("local") %>
+
+From cbcf31a4f98706ea675cafb7509b37dc2b0ceace Mon Sep 17 00:00:00 2001
+From: 138138138 <78271024+138138138@users.noreply.github.com>
+Date: Sun, 10 Jul 2022 16:54:56 +0800
+Subject: [PATCH 13/13] Skip OTF streams in DASH audio
+
+Skip OTF streams, prevent creating empty AdaptationSet in DASH audio
+---
+ src/invidious/routes/api/manifest.cr | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index ca72be26f..52b941753 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -61,10 +61,10 @@ module Invidious::Routes::API::Manifest
+             next if mime_streams.empty?
+ 
+             mime_streams.each do |fmt|
+-              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, label: fmt["bitrate"].to_s + "k") do
+-                # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
+-                next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
++              # OTF streams aren't supported yet (See https://github.com/TeamNewPipe/NewPipe/issues/2415)
++              next if !(fmt.has_key?("indexRange") && fmt.has_key?("initRange"))
+ 
++              xml.element("AdaptationSet", id: i, mimeType: mime_type, startWithSAP: 1, subsegmentAlignment: true, label: fmt["bitrate"].to_s + "k") do
+                 codecs = fmt["mimeType"].as_s.split("codecs=")[1].strip('"')
+                 bandwidth = fmt["bitrate"].as_i
+                 itag = fmt["itag"].as_i
