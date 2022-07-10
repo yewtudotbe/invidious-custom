@@ -278,42 +278,6 @@ index b9f816225..ca72be26f 100644
                    xml.element("AudioChannelConfiguration", schemeIdUri: "urn:mpeg:dash:23003:3:audio_channel_configuration:2011",
                      value: "2")
 
-From cc9ce916c6e8119eb36b54917215d2ef53f64793 Mon Sep 17 00:00:00 2001
-From: 138138138 <78271024+138138138@users.noreply.github.com>
-Date: Sat, 25 Jun 2022 19:24:20 +0800
-Subject: [PATCH 10/13] Update MobileUi
-
----
- assets/js/player.js | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/assets/js/player.js b/assets/js/player.js
-index 0416e2b0d..1b01ac368 100644
---- a/assets/js/player.js
-+++ b/assets/js/player.js
-@@ -148,9 +148,10 @@ function isMobile() {
- if (isMobile()) {
-     player.mobileUi();
- 
--    var buttons = ['playToggle', 'volumePanel', 'captionsButton', 'audioTrackButton'];
-+    var buttons = ['playToggle', 'volumePanel', 'captionsButton'];
- 
--    if (video_data.params.quality !== 'dash') buttons.push('qualitySelector');
-+    if (!video_data.params.listen && video_data.params.quality === 'dash') buttons.push('audioTrackButton');
-+    if (video_data.params.listen || video_data.params.quality !== 'dash') buttons.push('qualitySelector');
- 
-     // Create new control bar object for operation buttons
-     const ControlBar = videojs.getComponent('controlBar');
-@@ -177,7 +178,7 @@ if (isMobile()) {
-         var share_element = document.getElementsByClassName('vjs-share-control')[0];
-         operations_bar_element.append(share_element);
- 
--        if (video_data.params.quality === 'dash') {
-+        if (!video_data.params.listen && video_data.params.quality === 'dash') {
-             var http_source_selector = document.getElementsByClassName('vjs-http-source-selector vjs-menu-button')[0];
-             operations_bar_element.append(http_source_selector);
-         }
-
 From 3f1d88282ed2878608032ec605fe17e61197d8ed Mon Sep 17 00:00:00 2001
 From: 138138138 <78271024+138138138@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 19:26:14 +0800
