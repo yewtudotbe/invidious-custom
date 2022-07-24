@@ -16,11 +16,7 @@ index 19ee064c3..50bb80c1b 100644
  
    # Don't fetch the next endpoint if the video is unavailable.
 -  if !params["reason"]?
-+  if {"OK", "LIVE_STREAM_OFFLINE"}.any?(
-
-playability_status
-
-)
++  if {"OK", "LIVE_STREAM_OFFLINE"}.any?(playability_status)
      next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
      player_response = player_response.merge(next_response)
    end
