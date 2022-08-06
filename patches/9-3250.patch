@@ -1,0 +1,31 @@
+From b55c1a35bf8af2626f9eccdb371e54a9c2c771a2 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Sat, 6 Aug 2022 19:01:57 +0200
+Subject: [PATCH] Set cookies to Lax
+
+---
+ src/invidious/user/cookies.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/user/cookies.cr b/src/invidious/user/cookies.cr
+index 65e079ecb..654efc15b 100644
+--- a/src/invidious/user/cookies.cr
++++ b/src/invidious/user/cookies.cr
+@@ -18,7 +18,7 @@ struct Invidious::User
+         expires: Time.utc + 2.years,
+         secure: SECURE,
+         http_only: true,
+-        samesite: HTTP::Cookie::SameSite::Strict
++        samesite: HTTP::Cookie::SameSite::Lax
+       )
+     end
+ 
+@@ -32,7 +32,7 @@ struct Invidious::User
+         expires: Time.utc + 2.years,
+         secure: SECURE,
+         http_only: false,
+-        samesite: HTTP::Cookie::SameSite::Strict
++        samesite: HTTP::Cookie::SameSite::Lax
+       )
+     end
+   end
