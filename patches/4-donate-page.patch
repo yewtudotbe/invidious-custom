@@ -21,7 +21,7 @@ index d6bd9571..7abbc360 100644
  
 +  def self.donate(env)
 +    locale = env.get("preferences").as(Preferences).locale
-+    rendered "donate"
++    templated "donate"
 +  end
 +
    def self.licenses(env)
