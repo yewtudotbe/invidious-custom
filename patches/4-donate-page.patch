@@ -1,30 +1,18 @@
-From 12a044aae4ad517fce6367eb56a1b42fffaa4153 Mon Sep 17 00:00:00 2001
-From: Emilien Devos <contact@emiliendevos.be>
-Date: Thu, 12 Aug 2021 23:16:22 +0200
+From 3e502d655f7681629ad4cd3616fa857b7e0a476d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <github@emiliendevos.be>
+Date: Tue, 16 Aug 2022 06:59:35 +0000
 Subject: [PATCH] donate page
 
 ---
- src/invidious.cr                             |  1 +
  src/invidious/routes/misc.cr                 |  5 +++
+ src/invidious/routing.cr                     |  1 +
+ src/invidious/views/components/donate.ecr    | 36 ++++++++++++++++++++
  src/invidious/views/components/feed_menu.ecr |  3 ++
- src/invidious/views/donate.ecr               | 35 ++++++++++++++++++++
- 4 files changed, 44 insertions(+)
- create mode 100644 src/invidious/views/donate.ecr
+ 4 files changed, 45 insertions(+)
+ create mode 100644 src/invidious/views/components/donate.ecr
 
-diff --git a/src/invidious.cr b/src/invidious.cr
-index ba8f8484..60ba7688 100644
---- a/src/invidious.cr
-+++ b/src/invidious.cr
-@@ -304,6 +304,7 @@ end
- 
- {% unless flag?(:api_only) %}
-   Invidious::Routing.get "/", Invidious::Routes::Misc, :home
-+  Invidious::Routing.get "/donate", Invidious::Routes::Misc, :donate
-   Invidious::Routing.get "/privacy", Invidious::Routes::Misc, :privacy
-   Invidious::Routing.get "/licenses", Invidious::Routes::Misc, :licenses
- 
 diff --git a/src/invidious/routes/misc.cr b/src/invidious/routes/misc.cr
-index d6bd9571..81fb9a98 100644
+index d6bd9571..7abbc360 100644
 --- a/src/invidious/routes/misc.cr
 +++ b/src/invidious/routes/misc.cr
 @@ -33,6 +33,11 @@ module Invidious::Routes::Misc
@@ -33,29 +21,29 @@ index d6bd9571..81fb9a98 100644
  
 +  def self.donate(env)
 +    locale = env.get("preferences").as(Preferences).locale
-+    templated "donate"
++    rendered "donate"
 +  end
 +
    def self.licenses(env)
      locale = env.get("preferences").as(Preferences).locale
      rendered "licenses"
-diff --git a/src/invidious/views/components/feed_menu.ecr b/src/invidious/views/components/feed_menu.ecr
-index 3dbeaf37..d84d03d0 100644
---- a/src/invidious/views/components/feed_menu.ecr
-+++ b/src/invidious/views/components/feed_menu.ecr
-@@ -1,4 +1,7 @@
- <div class="feed-menu">
-+    <a href="/donate" class="feed-menu-item pure-menu-heading">
-+        Donate
-+    </a>
-     <% feed_menu = env.get("preferences").as(Preferences).feed_menu.dup %>
-     <% if !env.get?("user") %>
-         <% feed_menu.reject! {|item| {"Subscriptions", "Playlists"}.includes? item} %>
-diff --git a/src/invidious/views/donate.ecr b/src/invidious/views/donate.ecr
+diff --git a/src/invidious/routing.cr b/src/invidious/routing.cr
+index f409f13c..852fb7a8 100644
+--- a/src/invidious/routing.cr
++++ b/src/invidious/routing.cr
+@@ -18,6 +18,7 @@ module Invidious::Routing
+   def register_all
+     {% unless flag?(:api_only) %}
+       get "/", Routes::Misc, :home
++      get "/donate", Routes::Misc, :donate
+       get "/privacy", Routes::Misc, :privacy
+       get "/licenses", Routes::Misc, :licenses
+       get "/redirect", Routes::Misc, :cross_instance_redirect
+diff --git a/src/invidious/views/components/donate.ecr b/src/invidious/views/components/donate.ecr
 new file mode 100644
-index 00000000..1264f50a
+index 00000000..0c7deecc
 --- /dev/null
-+++ b/src/invidious/views/donate.ecr
++++ b/src/invidious/views/components/donate.ecr
 @@ -0,0 +1,36 @@
 +<% content_for "header" do %>
 +<title>Donate - Invidious</title>
@@ -94,6 +82,18 @@ index 00000000..1264f50a
 +    <p>Feel ask me by email at <code>donate[at]yewtu.be</code> to add it.</p>
 +</div>
 \ No newline at end of file
+diff --git a/src/invidious/views/components/feed_menu.ecr b/src/invidious/views/components/feed_menu.ecr
+index 3dbeaf37..d84d03d0 100644
+--- a/src/invidious/views/components/feed_menu.ecr
++++ b/src/invidious/views/components/feed_menu.ecr
+@@ -1,4 +1,7 @@
+ <div class="feed-menu">
++    <a href="/donate" class="feed-menu-item pure-menu-heading">
++        Donate
++    </a>
+     <% feed_menu = env.get("preferences").as(Preferences).feed_menu.dup %>
+     <% if !env.get?("user") %>
+         <% feed_menu.reject! {|item| {"Subscriptions", "Playlists"}.includes? item} %>
 -- 
-2.34.1
+2.36.1
 
