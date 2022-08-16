@@ -1,36 +1,37 @@
-From cdf9dc079fe4a3835205525a01750e803d85a5cd Mon Sep 17 00:00:00 2001
-From: Emilien Devos <github@emiliendevos.be>
-Date: Thu, 14 Apr 2022 09:49:52 +0000
-Subject: [PATCH 1/1] more csp
+From 236a2c70d3974f5a1fc55a5bc8047ff24d94bce2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <github@emiliendevos.be>
+Date: Tue, 16 Aug 2022 06:51:52 +0000
+Subject: [PATCH] more csp
 
 ---
- src/invidious.cr | 6 +++---
+ src/invidious/routes/before_all.cr | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/src/invidious.cr b/src/invidious.cr
-index 9f3d5d10..a7b2e240 100644
---- a/src/invidious.cr
-+++ b/src/invidious.cr
-@@ -195,9 +195,9 @@ before_all do |env|
-   # Allow media resources to be loaded from google servers
-   # TODO: check if *.youtube.com can be removed
-   if CONFIG.disabled?("local") || !preferences.local
--    extra_media_csp = " https://*.googlevideo.com:443 https://*.youtube.com:443"
-+    extra_media_csp = " https://*.googlevideo.com:443 https://*.youtube.com:443 https://*.proxy.yewtu.be:443"
-   else
--    extra_media_csp = ""
-+    extra_media_csp = " https://*.proxy.yewtu.be:443"
-   end
+diff --git a/src/invidious/routes/before_all.cr b/src/invidious/routes/before_all.cr
+index 8e2a253f..5c7cc959 100644
+--- a/src/invidious/routes/before_all.cr
++++ b/src/invidious/routes/before_all.cr
+@@ -23,9 +23,9 @@ module Invidious::Routes::BeforeAll
+     # Allow media resources to be loaded from google servers
+     # TODO: check if *.youtube.com can be removed
+     if CONFIG.disabled?("local") || !preferences.local
+-      extra_media_csp = " https://*.googlevideo.com:443 https://*.youtube.com:443"
++      extra_media_csp = " https://*.googlevideo.com:443 https://*.youtube.com:443 https://*.proxy.yewtu.be:443"
+     else
+-      extra_media_csp = ""
++      extra_media_csp = " https://*.proxy.yewtu.be:443"
+     end
  
-   # Only allow the pages at /embed/* to be embedded
-@@ -215,7 +215,7 @@ before_all do |env|
-     "style-src 'self' 'unsafe-inline'",
-     "img-src 'self' data:",
-     "font-src 'self' data:",
--    "connect-src 'self'",
-+    "connect-src 'self' https://*.proxy.yewtu.be:443",
-     "manifest-src 'self'",
-     "media-src 'self' blob:" + extra_media_csp,
-     "child-src 'self' blob:",
+     # Only allow the pages at /embed/* to be embedded
+@@ -43,7 +43,7 @@ module Invidious::Routes::BeforeAll
+       "style-src 'self' 'unsafe-inline'",
+       "img-src 'self' data:",
+       "font-src 'self' data:",
+-      "connect-src 'self'",
++      "connect-src 'self' https://*.proxy.yewtu.be:443",
+       "manifest-src 'self'",
+       "media-src 'self' blob:" + extra_media_csp,
+       "child-src 'self' blob:",
 -- 
-2.33.0
+2.36.1
+
