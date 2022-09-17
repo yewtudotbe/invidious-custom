@@ -1,0 +1,3767 @@
+From 0072ba1a98eefcad59e74ca67a2e1a5496904267 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 23 Aug 2022 18:23:53 +0200
+Subject: [PATCH 01/14] videos: move regions list to a dedicated file
+
+---
+ src/invidious/videos.cr         |  2 --
+ src/invidious/videos/regions.cr | 27 +++++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+ create mode 100644 src/invidious/videos/regions.cr
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index c0ed6e85f..97b4f4b83 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -131,8 +131,6 @@ CAPTION_LANGUAGES = {
+   "Zulu",
+ }
+ 
+-REGIONS = {"AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"}
+-
+ # See https://github.com/rg3/youtube-dl/blob/master/youtube_dl/extractor/youtube.py#L380-#L476
+ VIDEO_FORMATS = {
+   "5"  => {"ext" => "flv", "width" => 400, "height" => 240, "acodec" => "mp3", "abr" => 64, "vcodec" => "h263"},
+diff --git a/src/invidious/videos/regions.cr b/src/invidious/videos/regions.cr
+new file mode 100644
+index 000000000..575f8c25d
+--- /dev/null
++++ b/src/invidious/videos/regions.cr
+@@ -0,0 +1,27 @@
++# List of geographical regions that Youtube recognizes.
++# This is used to determine if a video is either restricted to a list
++# of allowed regions (= whitelisted) or if it can't be watched in
++# a set of regions (= blacklisted).
++REGIONS = {
++  "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT",
++  "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI",
++  "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY",
++  "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN",
++  "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM",
++  "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK",
++  "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL",
++  "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM",
++  "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR",
++  "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN",
++  "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS",
++  "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK",
++  "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW",
++  "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP",
++  "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM",
++  "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RU", "RW",
++  "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM",
++  "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ", "TC", "TD", "TF",
++  "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW",
++  "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI",
++  "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW",
++}
+
+From 878dd9723e929365f7b7104870d6b8b6b076869a Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Mon, 23 May 2022 21:54:48 +0200
+Subject: [PATCH 02/14] videos: move formats structure to a separate
+ file/module
+
+---
+ src/invidious.cr                     |   1 +
+ src/invidious/frontend/watch_page.cr |   2 +-
+ src/invidious/videos.cr              | 119 +--------------------------
+ src/invidious/videos/formats.cr      | 116 ++++++++++++++++++++++++++
+ 4 files changed, 120 insertions(+), 118 deletions(-)
+ create mode 100644 src/invidious/videos/formats.cr
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 0601d5b27..1a2a386ee 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -37,6 +37,7 @@ require "./invidious/database/migrations/*"
+ require "./invidious/helpers/*"
+ require "./invidious/yt_backend/*"
+ require "./invidious/frontend/*"
++require "./invidious/videos/*"
+ 
+ require "./invidious/*"
+ require "./invidious/channels/*"
+diff --git a/src/invidious/frontend/watch_page.cr b/src/invidious/frontend/watch_page.cr
+index 80b676415..9212eb2fd 100644
+--- a/src/invidious/frontend/watch_page.cr
++++ b/src/invidious/frontend/watch_page.cr
+@@ -50,7 +50,7 @@ module Invidious::Frontend::WatchPage
+       video_assets.full_videos.each do |option|
+         mimetype = option["mimeType"].as_s.split(";")[0]
+ 
+-        height = itag_to_metadata?(option["itag"]).try &.["height"]?
++        height = Invidious::Videos::Formats.itag_to_metadata?(option["itag"]).try &.["height"]?
+ 
+         value = {"itag": option["itag"], "ext": mimetype.split("/")[1]}.to_json
+ 
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 97b4f4b83..3a71f1635 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -131,117 +131,6 @@ CAPTION_LANGUAGES = {
+   "Zulu",
+ }
+ 
+-# See https://github.com/rg3/youtube-dl/blob/master/youtube_dl/extractor/youtube.py#L380-#L476
+-VIDEO_FORMATS = {
+-  "5"  => {"ext" => "flv", "width" => 400, "height" => 240, "acodec" => "mp3", "abr" => 64, "vcodec" => "h263"},
+-  "6"  => {"ext" => "flv", "width" => 450, "height" => 270, "acodec" => "mp3", "abr" => 64, "vcodec" => "h263"},
+-  "13" => {"ext" => "3gp", "acodec" => "aac", "vcodec" => "mp4v"},
+-  "17" => {"ext" => "3gp", "width" => 176, "height" => 144, "acodec" => "aac", "abr" => 24, "vcodec" => "mp4v"},
+-  "18" => {"ext" => "mp4", "width" => 640, "height" => 360, "acodec" => "aac", "abr" => 96, "vcodec" => "h264"},
+-  "22" => {"ext" => "mp4", "width" => 1280, "height" => 720, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
+-  "34" => {"ext" => "flv", "width" => 640, "height" => 360, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "35" => {"ext" => "flv", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-
+-  "36" => {"ext" => "3gp", "width" => 320, "acodec" => "aac", "vcodec" => "mp4v"},
+-  "37" => {"ext" => "mp4", "width" => 1920, "height" => 1080, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
+-  "38" => {"ext" => "mp4", "width" => 4096, "height" => 3072, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
+-  "43" => {"ext" => "webm", "width" => 640, "height" => 360, "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
+-  "44" => {"ext" => "webm", "width" => 854, "height" => 480, "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
+-  "45" => {"ext" => "webm", "width" => 1280, "height" => 720, "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
+-  "46" => {"ext" => "webm", "width" => 1920, "height" => 1080, "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
+-  "59" => {"ext" => "mp4", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "78" => {"ext" => "mp4", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-
+-  # 3D videos
+-  "82"  => {"ext" => "mp4", "height" => 360, "format" => "3D", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "83"  => {"ext" => "mp4", "height" => 480, "format" => "3D", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "84"  => {"ext" => "mp4", "height" => 720, "format" => "3D", "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
+-  "85"  => {"ext" => "mp4", "height" => 1080, "format" => "3D", "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
+-  "100" => {"ext" => "webm", "height" => 360, "format" => "3D", "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
+-  "101" => {"ext" => "webm", "height" => 480, "format" => "3D", "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
+-  "102" => {"ext" => "webm", "height" => 720, "format" => "3D", "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
+-
+-  # Apple HTTP Live Streaming
+-  "91"  => {"ext" => "mp4", "height" => 144, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
+-  "92"  => {"ext" => "mp4", "height" => 240, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
+-  "93"  => {"ext" => "mp4", "height" => 360, "format" => "HLS", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "94"  => {"ext" => "mp4", "height" => 480, "format" => "HLS", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
+-  "95"  => {"ext" => "mp4", "height" => 720, "format" => "HLS", "acodec" => "aac", "abr" => 256, "vcodec" => "h264"},
+-  "96"  => {"ext" => "mp4", "height" => 1080, "format" => "HLS", "acodec" => "aac", "abr" => 256, "vcodec" => "h264"},
+-  "132" => {"ext" => "mp4", "height" => 240, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
+-  "151" => {"ext" => "mp4", "height" => 72, "format" => "HLS", "acodec" => "aac", "abr" => 24, "vcodec" => "h264"},
+-
+-  # DASH mp4 video
+-  "133" => {"ext" => "mp4", "height" => 240, "format" => "DASH video", "vcodec" => "h264"},
+-  "134" => {"ext" => "mp4", "height" => 360, "format" => "DASH video", "vcodec" => "h264"},
+-  "135" => {"ext" => "mp4", "height" => 480, "format" => "DASH video", "vcodec" => "h264"},
+-  "136" => {"ext" => "mp4", "height" => 720, "format" => "DASH video", "vcodec" => "h264"},
+-  "137" => {"ext" => "mp4", "height" => 1080, "format" => "DASH video", "vcodec" => "h264"},
+-  "138" => {"ext" => "mp4", "format" => "DASH video", "vcodec" => "h264"}, # Height can vary (https://github.com/ytdl-org/youtube-dl/issues/4559)
+-  "160" => {"ext" => "mp4", "height" => 144, "format" => "DASH video", "vcodec" => "h264"},
+-  "212" => {"ext" => "mp4", "height" => 480, "format" => "DASH video", "vcodec" => "h264"},
+-  "264" => {"ext" => "mp4", "height" => 1440, "format" => "DASH video", "vcodec" => "h264"},
+-  "298" => {"ext" => "mp4", "height" => 720, "format" => "DASH video", "vcodec" => "h264", "fps" => 60},
+-  "299" => {"ext" => "mp4", "height" => 1080, "format" => "DASH video", "vcodec" => "h264", "fps" => 60},
+-  "266" => {"ext" => "mp4", "height" => 2160, "format" => "DASH video", "vcodec" => "h264"},
+-
+-  # Dash mp4 audio
+-  "139" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 48, "container" => "m4a_dash"},
+-  "140" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 128, "container" => "m4a_dash"},
+-  "141" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 256, "container" => "m4a_dash"},
+-  "256" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "container" => "m4a_dash"},
+-  "258" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "container" => "m4a_dash"},
+-  "325" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "dtse", "container" => "m4a_dash"},
+-  "328" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "ec-3", "container" => "m4a_dash"},
+-
+-  # Dash webm
+-  "167" => {"ext" => "webm", "height" => 360, "width" => 640, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "168" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "169" => {"ext" => "webm", "height" => 720, "width" => 1280, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "170" => {"ext" => "webm", "height" => 1080, "width" => 1920, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "218" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "219" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
+-  "278" => {"ext" => "webm", "height" => 144, "format" => "DASH video", "container" => "webm", "vcodec" => "vp9"},
+-  "242" => {"ext" => "webm", "height" => 240, "format" => "DASH video", "vcodec" => "vp9"},
+-  "243" => {"ext" => "webm", "height" => 360, "format" => "DASH video", "vcodec" => "vp9"},
+-  "244" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
+-  "245" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
+-  "246" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
+-  "247" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9"},
+-  "248" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9"},
+-  "271" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9"},
+-  # itag 272 videos are either 3840x2160 (e.g. RtoitU2A-3E) or 7680x4320 (sLprVF6d7Ug)
+-  "272" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9"},
+-  "302" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "303" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "308" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "313" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9"},
+-  "315" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "330" => {"ext" => "webm", "height" => 144, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "331" => {"ext" => "webm", "height" => 240, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "332" => {"ext" => "webm", "height" => 360, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "333" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "334" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "335" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "336" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-  "337" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
+-
+-  # Dash webm audio
+-  "171" => {"ext" => "webm", "acodec" => "vorbis", "format" => "DASH audio", "abr" => 128},
+-  "172" => {"ext" => "webm", "acodec" => "vorbis", "format" => "DASH audio", "abr" => 256},
+-
+-  # Dash webm audio with opus inside
+-  "249" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 50},
+-  "250" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 70},
+-  "251" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 160},
+-
+-  # av01 video only formats sometimes served with "unknown" codecs
+-  "394" => {"ext" => "mp4", "height" => 144, "vcodec" => "av01.0.05M.08"},
+-  "395" => {"ext" => "mp4", "height" => 240, "vcodec" => "av01.0.05M.08"},
+-  "396" => {"ext" => "mp4", "height" => 360, "vcodec" => "av01.0.05M.08"},
+-  "397" => {"ext" => "mp4", "height" => 480, "vcodec" => "av01.0.05M.08"},
+-}
+-
+ struct VideoPreferences
+   include JSON::Serializable
+ 
+@@ -390,7 +279,7 @@ struct Video
+               json.field "lmt", fmt["lastModified"]
+               json.field "projectionType", fmt["projectionType"]
+ 
+-              if fmt_info = itag_to_metadata?(fmt["itag"])
++              if fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
+                 fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
+                 json.field "fps", fps
+                 json.field "container", fmt_info["ext"]
+@@ -437,7 +326,7 @@ struct Video
+               json.field "type", fmt["mimeType"]
+               json.field "quality", fmt["quality"]
+ 
+-              fmt_info = itag_to_metadata?(fmt["itag"])
++              fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
+               if fmt_info
+                 fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
+                 json.field "fps", fps
+@@ -1164,10 +1053,6 @@ def fetch_video(id, region)
+   return video
+ end
+ 
+-def itag_to_metadata?(itag : JSON::Any)
+-  return VIDEO_FORMATS[itag.to_s]?
+-end
+-
+ def process_continuation(query, plid, id)
+   continuation = nil
+   if plid
+diff --git a/src/invidious/videos/formats.cr b/src/invidious/videos/formats.cr
+new file mode 100644
+index 000000000..e98e7257c
+--- /dev/null
++++ b/src/invidious/videos/formats.cr
+@@ -0,0 +1,116 @@
++module Invidious::Videos::Formats
++  def self.itag_to_metadata?(itag : JSON::Any)
++    return FORMATS[itag.to_s]?
++  end
++
++  # See https://github.com/rg3/youtube-dl/blob/master/youtube_dl/extractor/youtube.py#L380-#L476
++  private FORMATS = {
++    "5"  => {"ext" => "flv", "width" => 400, "height" => 240, "acodec" => "mp3", "abr" => 64, "vcodec" => "h263"},
++    "6"  => {"ext" => "flv", "width" => 450, "height" => 270, "acodec" => "mp3", "abr" => 64, "vcodec" => "h263"},
++    "13" => {"ext" => "3gp", "acodec" => "aac", "vcodec" => "mp4v"},
++    "17" => {"ext" => "3gp", "width" => 176, "height" => 144, "acodec" => "aac", "abr" => 24, "vcodec" => "mp4v"},
++    "18" => {"ext" => "mp4", "width" => 640, "height" => 360, "acodec" => "aac", "abr" => 96, "vcodec" => "h264"},
++    "22" => {"ext" => "mp4", "width" => 1280, "height" => 720, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
++    "34" => {"ext" => "flv", "width" => 640, "height" => 360, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "35" => {"ext" => "flv", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++
++    "36" => {"ext" => "3gp", "width" => 320, "acodec" => "aac", "vcodec" => "mp4v"},
++    "37" => {"ext" => "mp4", "width" => 1920, "height" => 1080, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
++    "38" => {"ext" => "mp4", "width" => 4096, "height" => 3072, "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
++    "43" => {"ext" => "webm", "width" => 640, "height" => 360, "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
++    "44" => {"ext" => "webm", "width" => 854, "height" => 480, "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
++    "45" => {"ext" => "webm", "width" => 1280, "height" => 720, "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
++    "46" => {"ext" => "webm", "width" => 1920, "height" => 1080, "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
++    "59" => {"ext" => "mp4", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "78" => {"ext" => "mp4", "width" => 854, "height" => 480, "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++
++    # 3D videos
++    "82"  => {"ext" => "mp4", "height" => 360, "format" => "3D", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "83"  => {"ext" => "mp4", "height" => 480, "format" => "3D", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "84"  => {"ext" => "mp4", "height" => 720, "format" => "3D", "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
++    "85"  => {"ext" => "mp4", "height" => 1080, "format" => "3D", "acodec" => "aac", "abr" => 192, "vcodec" => "h264"},
++    "100" => {"ext" => "webm", "height" => 360, "format" => "3D", "acodec" => "vorbis", "abr" => 128, "vcodec" => "vp8"},
++    "101" => {"ext" => "webm", "height" => 480, "format" => "3D", "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
++    "102" => {"ext" => "webm", "height" => 720, "format" => "3D", "acodec" => "vorbis", "abr" => 192, "vcodec" => "vp8"},
++
++    # Apple HTTP Live Streaming
++    "91"  => {"ext" => "mp4", "height" => 144, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
++    "92"  => {"ext" => "mp4", "height" => 240, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
++    "93"  => {"ext" => "mp4", "height" => 360, "format" => "HLS", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "94"  => {"ext" => "mp4", "height" => 480, "format" => "HLS", "acodec" => "aac", "abr" => 128, "vcodec" => "h264"},
++    "95"  => {"ext" => "mp4", "height" => 720, "format" => "HLS", "acodec" => "aac", "abr" => 256, "vcodec" => "h264"},
++    "96"  => {"ext" => "mp4", "height" => 1080, "format" => "HLS", "acodec" => "aac", "abr" => 256, "vcodec" => "h264"},
++    "132" => {"ext" => "mp4", "height" => 240, "format" => "HLS", "acodec" => "aac", "abr" => 48, "vcodec" => "h264"},
++    "151" => {"ext" => "mp4", "height" => 72, "format" => "HLS", "acodec" => "aac", "abr" => 24, "vcodec" => "h264"},
++
++    # DASH mp4 video
++    "133" => {"ext" => "mp4", "height" => 240, "format" => "DASH video", "vcodec" => "h264"},
++    "134" => {"ext" => "mp4", "height" => 360, "format" => "DASH video", "vcodec" => "h264"},
++    "135" => {"ext" => "mp4", "height" => 480, "format" => "DASH video", "vcodec" => "h264"},
++    "136" => {"ext" => "mp4", "height" => 720, "format" => "DASH video", "vcodec" => "h264"},
++    "137" => {"ext" => "mp4", "height" => 1080, "format" => "DASH video", "vcodec" => "h264"},
++    "138" => {"ext" => "mp4", "format" => "DASH video", "vcodec" => "h264"}, # Height can vary (https://github.com/ytdl-org/youtube-dl/issues/4559)
++    "160" => {"ext" => "mp4", "height" => 144, "format" => "DASH video", "vcodec" => "h264"},
++    "212" => {"ext" => "mp4", "height" => 480, "format" => "DASH video", "vcodec" => "h264"},
++    "264" => {"ext" => "mp4", "height" => 1440, "format" => "DASH video", "vcodec" => "h264"},
++    "298" => {"ext" => "mp4", "height" => 720, "format" => "DASH video", "vcodec" => "h264", "fps" => 60},
++    "299" => {"ext" => "mp4", "height" => 1080, "format" => "DASH video", "vcodec" => "h264", "fps" => 60},
++    "266" => {"ext" => "mp4", "height" => 2160, "format" => "DASH video", "vcodec" => "h264"},
++
++    # Dash mp4 audio
++    "139" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 48, "container" => "m4a_dash"},
++    "140" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 128, "container" => "m4a_dash"},
++    "141" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "abr" => 256, "container" => "m4a_dash"},
++    "256" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "container" => "m4a_dash"},
++    "258" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "aac", "container" => "m4a_dash"},
++    "325" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "dtse", "container" => "m4a_dash"},
++    "328" => {"ext" => "m4a", "format" => "DASH audio", "acodec" => "ec-3", "container" => "m4a_dash"},
++
++    # Dash webm
++    "167" => {"ext" => "webm", "height" => 360, "width" => 640, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "168" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "169" => {"ext" => "webm", "height" => 720, "width" => 1280, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "170" => {"ext" => "webm", "height" => 1080, "width" => 1920, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "218" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "219" => {"ext" => "webm", "height" => 480, "width" => 854, "format" => "DASH video", "container" => "webm", "vcodec" => "vp8"},
++    "278" => {"ext" => "webm", "height" => 144, "format" => "DASH video", "container" => "webm", "vcodec" => "vp9"},
++    "242" => {"ext" => "webm", "height" => 240, "format" => "DASH video", "vcodec" => "vp9"},
++    "243" => {"ext" => "webm", "height" => 360, "format" => "DASH video", "vcodec" => "vp9"},
++    "244" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
++    "245" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
++    "246" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9"},
++    "247" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9"},
++    "248" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9"},
++    "271" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9"},
++    # itag 272 videos are either 3840x2160 (e.g. RtoitU2A-3E) or 7680x4320 (sLprVF6d7Ug)
++    "272" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9"},
++    "302" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "303" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "308" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "313" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9"},
++    "315" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "330" => {"ext" => "webm", "height" => 144, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "331" => {"ext" => "webm", "height" => 240, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "332" => {"ext" => "webm", "height" => 360, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "333" => {"ext" => "webm", "height" => 480, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "334" => {"ext" => "webm", "height" => 720, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "335" => {"ext" => "webm", "height" => 1080, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "336" => {"ext" => "webm", "height" => 1440, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++    "337" => {"ext" => "webm", "height" => 2160, "format" => "DASH video", "vcodec" => "vp9", "fps" => 60},
++
++    # Dash webm audio
++    "171" => {"ext" => "webm", "acodec" => "vorbis", "format" => "DASH audio", "abr" => 128},
++    "172" => {"ext" => "webm", "acodec" => "vorbis", "format" => "DASH audio", "abr" => 256},
++
++    # Dash webm audio with opus inside
++    "249" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 50},
++    "250" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 70},
++    "251" => {"ext" => "webm", "format" => "DASH audio", "acodec" => "opus", "abr" => 160},
++
++    # av01 video only formats sometimes served with "unknown" codecs
++    "394" => {"ext" => "mp4", "height" => 144, "vcodec" => "av01.0.05M.08"},
++    "395" => {"ext" => "mp4", "height" => 240, "vcodec" => "av01.0.05M.08"},
++    "396" => {"ext" => "mp4", "height" => 360, "vcodec" => "av01.0.05M.08"},
++    "397" => {"ext" => "mp4", "height" => 480, "vcodec" => "av01.0.05M.08"},
++  }
++end
+
+From 0870642b868e766cbe185a1d3afcdf7c27994047 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Mon, 23 May 2022 22:29:10 +0200
+Subject: [PATCH 03/14] videos: move 'VideoPreferences' and its associated
+ function to a separate file
+
+This will require some rework later.
+---
+ src/invidious/videos.cr                   | 157 ----------------------
+ src/invidious/videos/video_preferences.cr | 156 +++++++++++++++++++++
+ 2 files changed, 156 insertions(+), 157 deletions(-)
+ create mode 100644 src/invidious/videos/video_preferences.cr
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 3a71f1635..f40126669 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -131,34 +131,6 @@ CAPTION_LANGUAGES = {
+   "Zulu",
+ }
+ 
+-struct VideoPreferences
+-  include JSON::Serializable
+-
+-  property annotations : Bool
+-  property autoplay : Bool
+-  property comments : Array(String)
+-  property continue : Bool
+-  property continue_autoplay : Bool
+-  property controls : Bool
+-  property listen : Bool
+-  property local : Bool
+-  property preferred_captions : Array(String)
+-  property player_style : String
+-  property quality : String
+-  property quality_dash : String
+-  property raw : Bool
+-  property region : String?
+-  property related_videos : Bool
+-  property speed : Float32 | Float64
+-  property video_end : Float64 | Int32
+-  property video_loop : Bool
+-  property extend_desc : Bool
+-  property video_start : Float64 | Int32
+-  property volume : Int32
+-  property vr_mode : Bool
+-  property save_player_pos : Bool
+-end
+-
+ struct Video
+   include DB::Serializable
+ 
+@@ -1067,135 +1039,6 @@ def process_continuation(query, plid, id)
+   continuation
+ end
+ 
+-def process_video_params(query, preferences)
+-  annotations = query["iv_load_policy"]?.try &.to_i?
+-  autoplay = query["autoplay"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  comments = query["comments"]?.try &.split(",").map(&.downcase)
+-  continue = query["continue"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  continue_autoplay = query["continue_autoplay"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  listen = query["listen"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  local = query["local"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  player_style = query["player_style"]?
+-  preferred_captions = query["subtitles"]?.try &.split(",").map(&.downcase)
+-  quality = query["quality"]?
+-  quality_dash = query["quality_dash"]?
+-  region = query["region"]?
+-  related_videos = query["related_videos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  speed = query["speed"]?.try &.rchop("x").to_f?
+-  video_loop = query["loop"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  volume = query["volume"]?.try &.to_i?
+-  vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-  save_player_pos = query["save_player_pos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
+-
+-  if preferences
+-    # region ||= preferences.region
+-    annotations ||= preferences.annotations.to_unsafe
+-    autoplay ||= preferences.autoplay.to_unsafe
+-    comments ||= preferences.comments
+-    continue ||= preferences.continue.to_unsafe
+-    continue_autoplay ||= preferences.continue_autoplay.to_unsafe
+-    listen ||= preferences.listen.to_unsafe
+-    local ||= preferences.local.to_unsafe
+-    player_style ||= preferences.player_style
+-    preferred_captions ||= preferences.captions
+-    quality ||= preferences.quality
+-    quality_dash ||= preferences.quality_dash
+-    related_videos ||= preferences.related_videos.to_unsafe
+-    speed ||= preferences.speed
+-    video_loop ||= preferences.video_loop.to_unsafe
+-    extend_desc ||= preferences.extend_desc.to_unsafe
+-    volume ||= preferences.volume
+-    vr_mode ||= preferences.vr_mode.to_unsafe
+-    save_player_pos ||= preferences.save_player_pos.to_unsafe
+-  end
+-
+-  annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
+-  autoplay ||= CONFIG.default_user_preferences.autoplay.to_unsafe
+-  comments ||= CONFIG.default_user_preferences.comments
+-  continue ||= CONFIG.default_user_preferences.continue.to_unsafe
+-  continue_autoplay ||= CONFIG.default_user_preferences.continue_autoplay.to_unsafe
+-  listen ||= CONFIG.default_user_preferences.listen.to_unsafe
+-  local ||= CONFIG.default_user_preferences.local.to_unsafe
+-  player_style ||= CONFIG.default_user_preferences.player_style
+-  preferred_captions ||= CONFIG.default_user_preferences.captions
+-  quality ||= CONFIG.default_user_preferences.quality
+-  quality_dash ||= CONFIG.default_user_preferences.quality_dash
+-  related_videos ||= CONFIG.default_user_preferences.related_videos.to_unsafe
+-  speed ||= CONFIG.default_user_preferences.speed
+-  video_loop ||= CONFIG.default_user_preferences.video_loop.to_unsafe
+-  extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
+-  volume ||= CONFIG.default_user_preferences.volume
+-  vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
+-  save_player_pos ||= CONFIG.default_user_preferences.save_player_pos.to_unsafe
+-
+-  annotations = annotations == 1
+-  autoplay = autoplay == 1
+-  continue = continue == 1
+-  continue_autoplay = continue_autoplay == 1
+-  listen = listen == 1
+-  local = local == 1
+-  related_videos = related_videos == 1
+-  video_loop = video_loop == 1
+-  extend_desc = extend_desc == 1
+-  vr_mode = vr_mode == 1
+-  save_player_pos = save_player_pos == 1
+-
+-  if CONFIG.disabled?("dash") && quality == "dash"
+-    quality = "high"
+-  end
+-
+-  if CONFIG.disabled?("local") && local
+-    local = false
+-  end
+-
+-  if start = query["t"]? || query["time_continue"]? || query["start"]?
+-    video_start = decode_time(start)
+-  end
+-  video_start ||= 0
+-
+-  if query["end"]?
+-    video_end = decode_time(query["end"])
+-  end
+-  video_end ||= -1
+-
+-  raw = query["raw"]?.try &.to_i?
+-  raw ||= 0
+-  raw = raw == 1
+-
+-  controls = query["controls"]?.try &.to_i?
+-  controls ||= 1
+-  controls = controls >= 1
+-
+-  params = VideoPreferences.new({
+-    annotations:        annotations,
+-    autoplay:           autoplay,
+-    comments:           comments,
+-    continue:           continue,
+-    continue_autoplay:  continue_autoplay,
+-    controls:           controls,
+-    listen:             listen,
+-    local:              local,
+-    player_style:       player_style,
+-    preferred_captions: preferred_captions,
+-    quality:            quality,
+-    quality_dash:       quality_dash,
+-    raw:                raw,
+-    region:             region,
+-    related_videos:     related_videos,
+-    speed:              speed,
+-    video_end:          video_end,
+-    video_loop:         video_loop,
+-    extend_desc:        extend_desc,
+-    video_start:        video_start,
+-    volume:             volume,
+-    vr_mode:            vr_mode,
+-    save_player_pos:    save_player_pos,
+-  })
+-
+-  return params
+-end
+-
+ def build_thumbnails(id)
+   return {
+     {host: HOST_URL, height: 720, width: 1280, name: "maxres", url: "maxres"},
+diff --git a/src/invidious/videos/video_preferences.cr b/src/invidious/videos/video_preferences.cr
+new file mode 100644
+index 000000000..34cf7ff04
+--- /dev/null
++++ b/src/invidious/videos/video_preferences.cr
+@@ -0,0 +1,156 @@
++struct VideoPreferences
++  include JSON::Serializable
++
++  property annotations : Bool
++  property autoplay : Bool
++  property comments : Array(String)
++  property continue : Bool
++  property continue_autoplay : Bool
++  property controls : Bool
++  property listen : Bool
++  property local : Bool
++  property preferred_captions : Array(String)
++  property player_style : String
++  property quality : String
++  property quality_dash : String
++  property raw : Bool
++  property region : String?
++  property related_videos : Bool
++  property speed : Float32 | Float64
++  property video_end : Float64 | Int32
++  property video_loop : Bool
++  property extend_desc : Bool
++  property video_start : Float64 | Int32
++  property volume : Int32
++  property vr_mode : Bool
++  property save_player_pos : Bool
++end
++
++def process_video_params(query, preferences)
++  annotations = query["iv_load_policy"]?.try &.to_i?
++  autoplay = query["autoplay"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  comments = query["comments"]?.try &.split(",").map(&.downcase)
++  continue = query["continue"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  continue_autoplay = query["continue_autoplay"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  listen = query["listen"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  local = query["local"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  player_style = query["player_style"]?
++  preferred_captions = query["subtitles"]?.try &.split(",").map(&.downcase)
++  quality = query["quality"]?
++  quality_dash = query["quality_dash"]?
++  region = query["region"]?
++  related_videos = query["related_videos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  speed = query["speed"]?.try &.rchop("x").to_f?
++  video_loop = query["loop"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  extend_desc = query["extend_desc"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  volume = query["volume"]?.try &.to_i?
++  vr_mode = query["vr_mode"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++  save_player_pos = query["save_player_pos"]?.try { |q| (q == "true" || q == "1").to_unsafe }
++
++  if preferences
++    # region ||= preferences.region
++    annotations ||= preferences.annotations.to_unsafe
++    autoplay ||= preferences.autoplay.to_unsafe
++    comments ||= preferences.comments
++    continue ||= preferences.continue.to_unsafe
++    continue_autoplay ||= preferences.continue_autoplay.to_unsafe
++    listen ||= preferences.listen.to_unsafe
++    local ||= preferences.local.to_unsafe
++    player_style ||= preferences.player_style
++    preferred_captions ||= preferences.captions
++    quality ||= preferences.quality
++    quality_dash ||= preferences.quality_dash
++    related_videos ||= preferences.related_videos.to_unsafe
++    speed ||= preferences.speed
++    video_loop ||= preferences.video_loop.to_unsafe
++    extend_desc ||= preferences.extend_desc.to_unsafe
++    volume ||= preferences.volume
++    vr_mode ||= preferences.vr_mode.to_unsafe
++    save_player_pos ||= preferences.save_player_pos.to_unsafe
++  end
++
++  annotations ||= CONFIG.default_user_preferences.annotations.to_unsafe
++  autoplay ||= CONFIG.default_user_preferences.autoplay.to_unsafe
++  comments ||= CONFIG.default_user_preferences.comments
++  continue ||= CONFIG.default_user_preferences.continue.to_unsafe
++  continue_autoplay ||= CONFIG.default_user_preferences.continue_autoplay.to_unsafe
++  listen ||= CONFIG.default_user_preferences.listen.to_unsafe
++  local ||= CONFIG.default_user_preferences.local.to_unsafe
++  player_style ||= CONFIG.default_user_preferences.player_style
++  preferred_captions ||= CONFIG.default_user_preferences.captions
++  quality ||= CONFIG.default_user_preferences.quality
++  quality_dash ||= CONFIG.default_user_preferences.quality_dash
++  related_videos ||= CONFIG.default_user_preferences.related_videos.to_unsafe
++  speed ||= CONFIG.default_user_preferences.speed
++  video_loop ||= CONFIG.default_user_preferences.video_loop.to_unsafe
++  extend_desc ||= CONFIG.default_user_preferences.extend_desc.to_unsafe
++  volume ||= CONFIG.default_user_preferences.volume
++  vr_mode ||= CONFIG.default_user_preferences.vr_mode.to_unsafe
++  save_player_pos ||= CONFIG.default_user_preferences.save_player_pos.to_unsafe
++
++  annotations = annotations == 1
++  autoplay = autoplay == 1
++  continue = continue == 1
++  continue_autoplay = continue_autoplay == 1
++  listen = listen == 1
++  local = local == 1
++  related_videos = related_videos == 1
++  video_loop = video_loop == 1
++  extend_desc = extend_desc == 1
++  vr_mode = vr_mode == 1
++  save_player_pos = save_player_pos == 1
++
++  if CONFIG.disabled?("dash") && quality == "dash"
++    quality = "high"
++  end
++
++  if CONFIG.disabled?("local") && local
++    local = false
++  end
++
++  if start = query["t"]? || query["time_continue"]? || query["start"]?
++    video_start = decode_time(start)
++  end
++  video_start ||= 0
++
++  if query["end"]?
++    video_end = decode_time(query["end"])
++  end
++  video_end ||= -1
++
++  raw = query["raw"]?.try &.to_i?
++  raw ||= 0
++  raw = raw == 1
++
++  controls = query["controls"]?.try &.to_i?
++  controls ||= 1
++  controls = controls >= 1
++
++  params = VideoPreferences.new({
++    annotations:        annotations,
++    autoplay:           autoplay,
++    comments:           comments,
++    continue:           continue,
++    continue_autoplay:  continue_autoplay,
++    controls:           controls,
++    listen:             listen,
++    local:              local,
++    player_style:       player_style,
++    preferred_captions: preferred_captions,
++    quality:            quality,
++    quality_dash:       quality_dash,
++    raw:                raw,
++    region:             region,
++    related_videos:     related_videos,
++    speed:              speed,
++    video_end:          video_end,
++    video_loop:         video_loop,
++    extend_desc:        extend_desc,
++    video_start:        video_start,
++    volume:             volume,
++    vr_mode:            vr_mode,
++    save_player_pos:    save_player_pos,
++  })
++
++  return params
++end
+
+From d839876065d0c19a14b70d9dbfb7c7c00a8a115a Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Mon, 23 May 2022 22:37:58 +0200
+Subject: [PATCH 04/14] videos: move 'Caption' and associated global/functions
+ to a separate file
+
+---
+ spec/spec_helper.cr                      |   1 +
+ src/invidious/frontend/watch_page.cr     |   2 +-
+ src/invidious/videos.cr                  | 168 +----------------------
+ src/invidious/videos/caption.cr          | 168 +++++++++++++++++++++++
+ src/invidious/views/user/preferences.ecr |   2 +-
+ 5 files changed, 177 insertions(+), 164 deletions(-)
+ create mode 100644 src/invidious/videos/caption.cr
+
+diff --git a/spec/spec_helper.cr b/spec/spec_helper.cr
+index 6c492e2f8..f8bfa7187 100644
+--- a/spec/spec_helper.cr
++++ b/spec/spec_helper.cr
+@@ -5,6 +5,7 @@ require "protodec/utils"
+ require "yaml"
+ require "../src/invidious/helpers/*"
+ require "../src/invidious/channels/*"
++require "../src/invidious/videos/caption"
+ require "../src/invidious/videos"
+ require "../src/invidious/comments"
+ require "../src/invidious/playlists"
+diff --git a/src/invidious/frontend/watch_page.cr b/src/invidious/frontend/watch_page.cr
+index 9212eb2fd..a9b00860a 100644
+--- a/src/invidious/frontend/watch_page.cr
++++ b/src/invidious/frontend/watch_page.cr
+@@ -7,7 +7,7 @@ module Invidious::Frontend::WatchPage
+     getter full_videos : Array(Hash(String, JSON::Any))
+     getter video_streams : Array(Hash(String, JSON::Any))
+     getter audio_streams : Array(Hash(String, JSON::Any))
+-    getter captions : Array(Caption)
++    getter captions : Array(Invidious::Videos::Caption)
+ 
+     def initialize(
+       @full_videos,
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index f40126669..45a44c29c 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -1,136 +1,3 @@
+-CAPTION_LANGUAGES = {
+-  "",
+-  "English",
+-  "English (auto-generated)",
+-  "English (United Kingdom)",
+-  "English (United States)",
+-  "Afrikaans",
+-  "Albanian",
+-  "Amharic",
+-  "Arabic",
+-  "Armenian",
+-  "Azerbaijani",
+-  "Bangla",
+-  "Basque",
+-  "Belarusian",
+-  "Bosnian",
+-  "Bulgarian",
+-  "Burmese",
+-  "Cantonese (Hong Kong)",
+-  "Catalan",
+-  "Cebuano",
+-  "Chinese",
+-  "Chinese (China)",
+-  "Chinese (Hong Kong)",
+-  "Chinese (Simplified)",
+-  "Chinese (Taiwan)",
+-  "Chinese (Traditional)",
+-  "Corsican",
+-  "Croatian",
+-  "Czech",
+-  "Danish",
+-  "Dutch",
+-  "Dutch (auto-generated)",
+-  "Esperanto",
+-  "Estonian",
+-  "Filipino",
+-  "Finnish",
+-  "French",
+-  "French (auto-generated)",
+-  "Galician",
+-  "Georgian",
+-  "German",
+-  "German (auto-generated)",
+-  "Greek",
+-  "Gujarati",
+-  "Haitian Creole",
+-  "Hausa",
+-  "Hawaiian",
+-  "Hebrew",
+-  "Hindi",
+-  "Hmong",
+-  "Hungarian",
+-  "Icelandic",
+-  "Igbo",
+-  "Indonesian",
+-  "Indonesian (auto-generated)",
+-  "Interlingue",
+-  "Irish",
+-  "Italian",
+-  "Italian (auto-generated)",
+-  "Japanese",
+-  "Japanese (auto-generated)",
+-  "Javanese",
+-  "Kannada",
+-  "Kazakh",
+-  "Khmer",
+-  "Korean",
+-  "Korean (auto-generated)",
+-  "Kurdish",
+-  "Kyrgyz",
+-  "Lao",
+-  "Latin",
+-  "Latvian",
+-  "Lithuanian",
+-  "Luxembourgish",
+-  "Macedonian",
+-  "Malagasy",
+-  "Malay",
+-  "Malayalam",
+-  "Maltese",
+-  "Maori",
+-  "Marathi",
+-  "Mongolian",
+-  "Nepali",
+-  "Norwegian Bokmål",
+-  "Nyanja",
+-  "Pashto",
+-  "Persian",
+-  "Polish",
+-  "Portuguese",
+-  "Portuguese (auto-generated)",
+-  "Portuguese (Brazil)",
+-  "Punjabi",
+-  "Romanian",
+-  "Russian",
+-  "Russian (auto-generated)",
+-  "Samoan",
+-  "Scottish Gaelic",
+-  "Serbian",
+-  "Shona",
+-  "Sindhi",
+-  "Sinhala",
+-  "Slovak",
+-  "Slovenian",
+-  "Somali",
+-  "Southern Sotho",
+-  "Spanish",
+-  "Spanish (auto-generated)",
+-  "Spanish (Latin America)",
+-  "Spanish (Mexico)",
+-  "Spanish (Spain)",
+-  "Sundanese",
+-  "Swahili",
+-  "Swedish",
+-  "Tajik",
+-  "Tamil",
+-  "Telugu",
+-  "Thai",
+-  "Turkish",
+-  "Turkish (auto-generated)",
+-  "Ukrainian",
+-  "Urdu",
+-  "Uzbek",
+-  "Vietnamese",
+-  "Vietnamese (auto-generated)",
+-  "Welsh",
+-  "Western Frisian",
+-  "Xhosa",
+-  "Yiddish",
+-  "Yoruba",
+-  "Zulu",
+-}
+-
+ struct Video
+   include DB::Serializable
+ 
+@@ -141,7 +8,7 @@ struct Video
+   property updated : Time
+ 
+   @[DB::Field(ignore: true)]
+-  property captions : Array(Caption)?
++  @captions = [] of Invidious::Videos::Caption
+ 
+   @[DB::Field(ignore: true)]
+   property adaptive_fmts : Array(Hash(String, JSON::Any))?
+@@ -595,20 +462,12 @@ struct Video
+     keywords.includes? "YouTube Red"
+   end
+ 
+-  def captions : Array(Caption)
+-    return @captions.as(Array(Caption)) if @captions
+-    captions = info["captions"]?.try &.["playerCaptionsTracklistRenderer"]?.try &.["captionTracks"]?.try &.as_a.map do |caption|
+-      name = caption["name"]["simpleText"]? || caption["name"]["runs"][0]["text"]
+-      language_code = caption["languageCode"].to_s
+-      base_url = caption["baseUrl"].to_s
+-
+-      caption = Caption.new(name.to_s, language_code, base_url)
+-      caption.name = caption.name.split(" - ")[0]
+-      caption
++  def captions : Array(Invidious::Videos::Caption)
++    if @captions.empty? && @info.has_key?("captions")
++      @captions = Invidious::Videos::Caption.from_yt_json(info["captions"])
+     end
+-    captions ||= [] of Caption
+-    @captions = captions
+-    return @captions.as(Array(Caption))
++
++    return @captions
+   end
+ 
+   def description
+@@ -672,21 +531,6 @@ struct Video
+   end
+ end
+ 
+-struct Caption
+-  property name
+-  property language_code
+-  property base_url
+-
+-  getter name : String
+-  getter language_code : String
+-  getter base_url : String
+-
+-  setter name
+-
+-  def initialize(@name, @language_code, @base_url)
+-  end
+-end
+-
+ class VideoRedirect < Exception
+   property video_id : String
+ 
+diff --git a/src/invidious/videos/caption.cr b/src/invidious/videos/caption.cr
+new file mode 100644
+index 000000000..4642c1a77
+--- /dev/null
++++ b/src/invidious/videos/caption.cr
+@@ -0,0 +1,168 @@
++require "json"
++
++module Invidious::Videos
++  struct Caption
++    property name : String
++    property language_code : String
++    property base_url : String
++
++    def initialize(@name, @language_code, @base_url)
++    end
++
++    # Parse the JSON structure from Youtube
++    def self.from_yt_json(container : JSON::Any) : Array(Caption)
++      caption_tracks = container
++        .dig?("playerCaptionsTracklistRenderer", "captionTracks")
++        .try &.as_a
++
++      captions_list = [] of Caption
++      return captions_list if caption_tracks.nil?
++
++      caption_tracks.each do |caption|
++        name = caption["name"]["simpleText"]? || caption["name"]["runs"][0]["text"]
++        name = name.to_s.split(" - ")[0]
++
++        language_code = caption["languageCode"].to_s
++        base_url = caption["baseUrl"].to_s
++
++        captions_list << Caption.new(name, language_code, base_url)
++      end
++
++      return captions_list
++    end
++
++    # List of all caption languages available on Youtube.
++    LANGUAGES = {
++      "",
++      "English",
++      "English (auto-generated)",
++      "English (United Kingdom)",
++      "English (United States)",
++      "Afrikaans",
++      "Albanian",
++      "Amharic",
++      "Arabic",
++      "Armenian",
++      "Azerbaijani",
++      "Bangla",
++      "Basque",
++      "Belarusian",
++      "Bosnian",
++      "Bulgarian",
++      "Burmese",
++      "Cantonese (Hong Kong)",
++      "Catalan",
++      "Cebuano",
++      "Chinese",
++      "Chinese (China)",
++      "Chinese (Hong Kong)",
++      "Chinese (Simplified)",
++      "Chinese (Taiwan)",
++      "Chinese (Traditional)",
++      "Corsican",
++      "Croatian",
++      "Czech",
++      "Danish",
++      "Dutch",
++      "Dutch (auto-generated)",
++      "Esperanto",
++      "Estonian",
++      "Filipino",
++      "Finnish",
++      "French",
++      "French (auto-generated)",
++      "Galician",
++      "Georgian",
++      "German",
++      "German (auto-generated)",
++      "Greek",
++      "Gujarati",
++      "Haitian Creole",
++      "Hausa",
++      "Hawaiian",
++      "Hebrew",
++      "Hindi",
++      "Hmong",
++      "Hungarian",
++      "Icelandic",
++      "Igbo",
++      "Indonesian",
++      "Indonesian (auto-generated)",
++      "Interlingue",
++      "Irish",
++      "Italian",
++      "Italian (auto-generated)",
++      "Japanese",
++      "Japanese (auto-generated)",
++      "Javanese",
++      "Kannada",
++      "Kazakh",
++      "Khmer",
++      "Korean",
++      "Korean (auto-generated)",
++      "Kurdish",
++      "Kyrgyz",
++      "Lao",
++      "Latin",
++      "Latvian",
++      "Lithuanian",
++      "Luxembourgish",
++      "Macedonian",
++      "Malagasy",
++      "Malay",
++      "Malayalam",
++      "Maltese",
++      "Maori",
++      "Marathi",
++      "Mongolian",
++      "Nepali",
++      "Norwegian Bokmål",
++      "Nyanja",
++      "Pashto",
++      "Persian",
++      "Polish",
++      "Portuguese",
++      "Portuguese (auto-generated)",
++      "Portuguese (Brazil)",
++      "Punjabi",
++      "Romanian",
++      "Russian",
++      "Russian (auto-generated)",
++      "Samoan",
++      "Scottish Gaelic",
++      "Serbian",
++      "Shona",
++      "Sindhi",
++      "Sinhala",
++      "Slovak",
++      "Slovenian",
++      "Somali",
++      "Southern Sotho",
++      "Spanish",
++      "Spanish (auto-generated)",
++      "Spanish (Latin America)",
++      "Spanish (Mexico)",
++      "Spanish (Spain)",
++      "Sundanese",
++      "Swahili",
++      "Swedish",
++      "Tajik",
++      "Tamil",
++      "Telugu",
++      "Thai",
++      "Turkish",
++      "Turkish (auto-generated)",
++      "Ukrainian",
++      "Urdu",
++      "Uzbek",
++      "Vietnamese",
++      "Vietnamese (auto-generated)",
++      "Welsh",
++      "Western Frisian",
++      "Xhosa",
++      "Yiddish",
++      "Yoruba",
++      "Zulu",
++    }
++  end
++end
+diff --git a/src/invidious/views/user/preferences.ecr b/src/invidious/views/user/preferences.ecr
+index dbb5e9db5..d841982ce 100644
+--- a/src/invidious/views/user/preferences.ecr
++++ b/src/invidious/views/user/preferences.ecr
+@@ -89,7 +89,7 @@
+                 <label for="captions[0]"><%= translate(locale, "preferences_captions_label") %></label>
+                 <% preferences.captions.each_with_index do |caption, index| %>
+                     <select class="pure-u-1-6" name="captions[<%= index %>]" id="captions[<%= index %>]">
+-                        <% CAPTION_LANGUAGES.each do |option| %>
++                        <% Invidious::Videos::Caption::LANGUAGES.each do |option| %>
+                             <option value="<%= option %>" <% if preferences.captions[index] == option %> selected <% end %>><%= translate(locale, option.blank? ? "none" : option) %></option>
+                         <% end %>
+                     </select>
+
+From e7effda0ddb3eba7b0dff979132ba5288ab2e163 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Sun, 24 Jul 2022 23:30:58 +0200
+Subject: [PATCH 05/14] Videos: parse data during first fetching
+
+There will be less data to be stores in the DB cache
+---
+ .../videos/scheduled_live_extract_spec.cr     |   2 -
+ src/invidious/videos.cr                       | 299 +++++++++++-------
+ 2 files changed, 181 insertions(+), 120 deletions(-)
+
+diff --git a/spec/invidious/videos/scheduled_live_extract_spec.cr b/spec/invidious/videos/scheduled_live_extract_spec.cr
+index 6e531bbd9..b80aec0cc 100644
+--- a/spec/invidious/videos/scheduled_live_extract_spec.cr
++++ b/spec/invidious/videos/scheduled_live_extract_spec.cr
+@@ -22,7 +22,6 @@ Spectator.describe Invidious::Hashtag do
+     expect(info["likes"].as_i).to eq(2_283)
+ 
+     expect(info["genre"].as_s).to eq("Gaming")
+-    expect(info["genreUrl"].raw).to be_nil
+     expect(info["genreUcid"].as_s).to be_empty
+     expect(info["license"].as_s).to be_empty
+ 
+@@ -81,7 +80,6 @@ Spectator.describe Invidious::Hashtag do
+     expect(info["likes"].as_i).to eq(22)
+ 
+     expect(info["genre"].as_s).to eq("Entertainment")
+-    expect(info["genreUrl"].raw).to be_nil
+     expect(info["genreUcid"].as_s).to be_empty
+     expect(info["license"].as_s).to be_empty
+ 
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 45a44c29c..07006d794 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -1,3 +1,9 @@
++enum VideoType
++  Video
++  Livestream
++  Scheduled
++end
++
+ struct Video
+   include DB::Serializable
+ 
+@@ -27,7 +33,7 @@ struct Video
+ 
+   def to_json(locale : String?, json : JSON::Builder)
+     json.object do
+-      json.field "type", "video"
++      json.field "type", self.video_type
+ 
+       json.field "title", self.title
+       json.field "videoId", self.id
+@@ -253,61 +259,21 @@ struct Video
+     to_json(nil, json)
+   end
+ 
+-  def title
+-    info["videoDetails"]["title"]?.try &.as_s || ""
+-  end
+-
+-  def ucid
+-    info["videoDetails"]["channelId"]?.try &.as_s || ""
+-  end
+-
+-  def author
+-    info["videoDetails"]["author"]?.try &.as_s || ""
+-  end
+-
+-  def length_seconds : Int32
+-    info.dig?("microformat", "playerMicroformatRenderer", "lengthSeconds").try &.as_s.to_i ||
+-      info["videoDetails"]["lengthSeconds"]?.try &.as_s.to_i || 0
+-  end
+-
+-  def views : Int64
+-    info["videoDetails"]["viewCount"]?.try &.as_s.to_i64 || 0_i64
+-  end
+-
+-  def likes : Int64
+-    info["likes"]?.try &.as_i64 || 0_i64
+-  end
+-
+-  def dislikes : Int64
+-    info["dislikes"]?.try &.as_i64 || 0_i64
++  def video_type : VideoType
++    return VideoType.parse(info["videoType"]?.try &.as_s || "regular")
+   end
+ 
+   def published : Time
+-    info
+-      .dig?("microformat", "playerMicroformatRenderer", "publishDate")
++    return info["published"]?
+       .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) } || Time.utc
+   end
+ 
+   def published=(other : Time)
+-    info["microformat"].as_h["playerMicroformatRenderer"].as_h["publishDate"] = JSON::Any.new(other.to_s("%Y-%m-%d"))
+-  end
+-
+-  def allow_ratings
+-    r = info["videoDetails"]["allowRatings"]?.try &.as_bool
+-    r.nil? ? false : r
++    info["published"] = JSON::Any.new(other.to_s("%Y-%m-%d"))
+   end
+ 
+   def live_now
+-    info["microformat"]?.try &.["playerMicroformatRenderer"]?
+-      .try &.["liveBroadcastDetails"]?.try &.["isLiveNow"]?.try &.as_bool || false
+-  end
+-
+-  def is_listed
+-    info["videoDetails"]["isCrawlable"]?.try &.as_bool || false
+-  end
+-
+-  def is_upcoming
+-    info["videoDetails"]["isUpcoming"]?.try &.as_bool || false
++    return (self.video_type == VideoType::Livestream)
+   end
+ 
+   def premiere_timestamp : Time?
+@@ -316,31 +282,11 @@ struct Video
+       .try { |t| Time.parse_rfc3339(t.as_s) }
+   end
+ 
+-  def keywords
+-    info["videoDetails"]["keywords"]?.try &.as_a.map &.as_s || [] of String
+-  end
+-
+   def related_videos
+     info["relatedVideos"]?.try &.as_a.map { |h| h.as_h.transform_values &.as_s } || [] of Hash(String, String)
+   end
+ 
+-  def allowed_regions
+-    info
+-      .dig?("microformat", "playerMicroformatRenderer", "availableCountries")
+-      .try &.as_a.map &.as_s || [] of String
+-  end
+-
+-  def author_thumbnail : String
+-    info["authorThumbnail"]?.try &.as_s || ""
+-  end
+-
+-  def author_verified : Bool
+-    info["authorVerified"]?.try &.as_bool || false
+-  end
+-
+-  def sub_count_text : String
+-    info["subCountText"]?.try &.as_s || "-"
+-  end
++  # Methods for parsing streaming data
+ 
+   def fmt_stream
+     return @fmt_stream.as(Array(Hash(String, JSON::Any))) if @fmt_stream
+@@ -391,6 +337,8 @@ struct Video
+     adaptive_fmts.select &.["mimeType"]?.try &.as_s.starts_with?("audio")
+   end
+ 
++  # Misc. methods
++
+   def storyboards
+     storyboards = info.dig?("storyboards", "playerStoryboardSpecRenderer", "spec")
+       .try &.as_s.split("|")
+@@ -454,8 +402,7 @@ struct Video
+   end
+ 
+   def paid
+-    reason = info.dig?("playabilityStatus", "reason").try &.as_s || ""
+-    return reason.includes? "requires payment"
++    return (self.reason || "").includes? "requires payment"
+   end
+ 
+   def premium
+@@ -470,29 +417,6 @@ struct Video
+     return @captions
+   end
+ 
+-  def description
+-    description = info
+-      .dig?("microformat", "playerMicroformatRenderer", "description", "simpleText")
+-      .try &.as_s || ""
+-  end
+-
+-  # TODO
+-  def description=(value : String)
+-    @description = value
+-  end
+-
+-  def description_html
+-    info["descriptionHtml"]?.try &.as_s || "<p></p>"
+-  end
+-
+-  def description_html=(value : String)
+-    info["descriptionHtml"] = JSON::Any.new(value)
+-  end
+-
+-  def short_description
+-    info["shortDescription"]?.try &.as_s? || ""
+-  end
+-
+   def hls_manifest_url : String?
+     info.dig?("streamingData", "hlsManifestUrl").try &.as_s
+   end
+@@ -501,25 +425,12 @@ struct Video
+     info.dig?("streamingData", "dashManifestUrl").try &.as_s
+   end
+ 
+-  def genre : String
+-    info["genre"]?.try &.as_s || ""
+-  end
+-
+   def genre_url : String?
+     info["genreUcid"]? ? "/channel/#{info["genreUcid"]}" : nil
+   end
+ 
+-  def license : String?
+-    info["license"]?.try &.as_s
+-  end
+-
+-  def is_family_friendly : Bool
+-    info.dig?("microformat", "playerMicroformatRenderer", "isFamilySafe").try &.as_bool || false
+-  end
+-
+   def is_vr : Bool?
+-    projection_type = info.dig?("streamingData", "adaptiveFormats", 0, "projectionType").try &.as_s
+-    return {"EQUIRECTANGULAR", "MESH"}.includes? projection_type
++    return {"EQUIRECTANGULAR", "MESH"}.includes? self.projection_type
+   end
+ 
+   def projection_type : String?
+@@ -529,6 +440,91 @@ struct Video
+   def reason : String?
+     info["reason"]?.try &.as_s
+   end
++
++  # Macros defining getters/setters for various types of data
++
++  private macro getset_string(name)
++    # Return {{name.stringify}} from `info`
++    def {{name.id.underscore}} : String
++      return info[{{name.stringify}}]?.try &.as_s || ""
++    end
++
++    # Update {{name.stringify}} into `info`
++    def {{name.id.underscore}}=(value : String)
++      info[{{name.stringify}}] = JSON::Any.new(value)
++    end
++
++    {% if flag?(:debug_macros) %} {{debug}} {% end %}
++  end
++
++  private macro getset_string_array(name)
++    # Return {{name.stringify}} from `info`
++    def {{name.id.underscore}} : Array(String)
++      return info[{{name.stringify}}]?.try &.as_a.map &.as_s || [] of String
++    end
++
++    # Update {{name.stringify}} into `info`
++    def {{name.id.underscore}}=(value : Array(String))
++      info[{{name.stringify}}] = JSON::Any.new(value)
++    end
++
++    {% if flag?(:debug_macros) %} {{debug}} {% end %}
++  end
++
++  {% for op, type in {i32: Int32, i64: Int64} %}
++    private macro getset_{{op}}(name)
++      def \{{name.id.underscore}} : {{type}}
++        return info[\{{name.stringify}}]?.try &.as_i.to_{{op}} || 0_{{op}}
++      end
++
++      def \{{name.id.underscore}}=(value : Int)
++        info[\{{name.stringify}}] = JSON::Any.new(value.to_i64)
++      end
++
++      \{% if flag?(:debug_macros) %} \{{debug}} \{% end %}
++    end
++  {% end %}
++
++  private macro getset_bool(name)
++    # Return {{name.stringify}} from `info`
++    def {{name.id.underscore}} : Bool
++      return info[{{name.stringify}}]?.try &.as_bool || false
++    end
++
++    # Update {{name.stringify}} into `info`
++    def {{name.id.underscore}}=(value : Bool)
++      info[{{name.stringify}}] = JSON::Any.new(value)
++    end
++
++    {% if flag?(:debug_macros) %} {{debug}} {% end %}
++  end
++
++  # Method definitions, using the macros above
++
++  getset_string author
++  getset_string authorThumbnail
++  getset_string description
++  getset_string descriptionHtml
++  getset_string genre
++  getset_string genreUcid
++  getset_string license
++  getset_string shortDescription
++  getset_string subCountText
++  getset_string title
++  getset_string ucid
++
++  getset_string_array allowedRegions
++  getset_string_array keywords
++
++  getset_i32 lengthSeconds
++  getset_i64 likes
++  getset_i64 views
++
++  getset_bool allowRatings
++  getset_bool authorVerified
++  getset_bool isFamilyFriendly
++  getset_bool isListed
++  getset_bool isUpcoming
+ end
+ 
+ class VideoRedirect < Exception
+@@ -684,6 +680,42 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   raise BrokenTubeException.new("videoPrimaryInfoRenderer") if !video_primary_renderer
+   raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
+ 
++  video_details = player_response.dig?("videoDetails")
++  microformat = player_response.dig?("microformat", "playerMicroformatRenderer")
++
++  raise BrokenTubeException.new("videoDetails") if !video_details
++  raise BrokenTubeException.new("microformat") if !microformat
++
++  # Basic video infos
++
++  title = video_details["title"]?.try &.as_s
++  views = video_details["viewCount"]?.try &.as_s.to_i64
++
++  length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
++    .try &.as_s.to_i64
++
++  published = microformat["publishDate"]?
++    .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) } || Time.utc
++
++  premiere_timestamp = microformat.dig?("liveBroadcastDetails", "startTimestamp")
++    .try { |t| Time.parse_rfc3339(t.as_s) }
++
++  live_now = microformat.dig?("liveBroadcastDetails", "isLiveNow")
++    .try &.as_bool || false
++
++  # Extra video infos
++
++  allowed_regions = microformat["availableCountries"]?
++    .try &.as_a.map &.as_s || [] of String
++
++  allow_ratings = video_details["allowRatings"]?.try &.as_bool
++  family_friendly = microformat["isFamilySafe"].try &.as_bool
++  is_listed = video_details["isCrawlable"]?.try &.as_bool
++  is_upcoming = video_details["isUpcoming"]?.try &.as_bool
++
++  keywords = video_details["keywords"]?
++    .try &.as_a.map &.as_s || [] of String
++
+   # Related videos
+ 
+   LOGGER.debug("extract_video_info: parsing related videos...")
+@@ -738,6 +770,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   # Description
+ 
++  description = microformat.dig?("description", "simpleText").try &.as_s || ""
+   short_description = player_response.dig?("videoDetails", "shortDescription")
+ 
+   description_html = video_secondary_renderer.try &.dig?("description", "runs")
+@@ -749,7 +782,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     .try &.dig?("metadataRowContainer", "metadataRowContainerRenderer", "rows")
+       .try &.as_a
+ 
+-  genre = player_response.dig?("microformat", "playerMicroformatRenderer", "category")
++  genre = microformat["category"]?
+   genre_ucid = nil
+   license = nil
+ 
+@@ -771,6 +804,9 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   # Author infos
+ 
++  author = video_details["author"]?.try &.as_s
++  ucid = video_details["channelId"]?.try &.as_s
++
+   if author_info = video_secondary_renderer.try &.dig?("owner", "videoOwnerRenderer")
+     author_thumbnail = author_info.dig?("thumbnail", "thumbnails", 0, "url")
+     author_verified = has_verified_badge?(author_info["badges"]?)
+@@ -782,19 +818,46 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   # Return data
+ 
++  if live_now
++    video_type = VideoType::Livestream
++  elsif premiere_timestamp.not_nil!
++    video_type = VideoType::Scheduled
++    published = premiere_timestamp || Time.utc
++  else
++    video_type = VideoType::Video
++  end
++
+   params = {
+-    "shortDescription" => JSON::Any.new(short_description.try &.as_s || nil),
+-    "relatedVideos"    => JSON::Any.new(related),
+-    "likes"            => JSON::Any.new(likes || 0_i64),
+-    "dislikes"         => JSON::Any.new(0_i64),
++    "videoType" => JSON::Any.new(video_type.to_s),
++    # Basic video infos
++    "title"         => JSON::Any.new(title || ""),
++    "views"         => JSON::Any.new(views || 0_i64),
++    "likes"         => JSON::Any.new(likes || 0_i64),
++    "lengthSeconds" => JSON::Any.new(length_txt || 0_i64),
++    "published"     => JSON::Any.new(published.to_rfc3339),
++    # Extra video infos
++    "allowedRegions"   => JSON::Any.new(allowed_regions.map { |v| JSON::Any.new(v) }),
++    "allowRatings"     => JSON::Any.new(allow_ratings || false),
++    "isFamilyFriendly" => JSON::Any.new(family_friendly || false),
++    "isListed"         => JSON::Any.new(is_listed || false),
++    "isUpcoming"       => JSON::Any.new(is_upcoming || false),
++    "keywords"         => JSON::Any.new(keywords.map { |v| JSON::Any.new(v) }),
++    # Related videos
++    "relatedVideos" => JSON::Any.new(related),
++    # Description
++    "description"      => JSON::Any.new(description || ""),
+     "descriptionHtml"  => JSON::Any.new(description_html || "<p></p>"),
+-    "genre"            => JSON::Any.new(genre.try &.as_s || ""),
+-    "genreUrl"         => JSON::Any.new(nil),
+-    "genreUcid"        => JSON::Any.new(genre_ucid.try &.as_s || ""),
+-    "license"          => JSON::Any.new(license.try &.as_s || ""),
+-    "authorThumbnail"  => JSON::Any.new(author_thumbnail.try &.as_s || ""),
+-    "authorVerified"   => JSON::Any.new(author_verified),
+-    "subCountText"     => JSON::Any.new(subs_text || "-"),
++    "shortDescription" => JSON::Any.new(short_description.try &.as_s || nil),
++    # Video metadata
++    "genre"     => JSON::Any.new(genre.try &.as_s || ""),
++    "genreUcid" => JSON::Any.new(genre_ucid.try &.as_s || ""),
++    "license"   => JSON::Any.new(license.try &.as_s || ""),
++    # Author infos
++    "author"          => JSON::Any.new(author || ""),
++    "ucid"            => JSON::Any.new(ucid || ""),
++    "authorThumbnail" => JSON::Any.new(author_thumbnail.try &.as_s || ""),
++    "authorVerified"  => JSON::Any.new(author_verified),
++    "subCountText"    => JSON::Any.new(subs_text || "-"),
+   }
+ 
+   return params
+
+From 9103cac78f6ec9dd4ac8fc24e85802c054ae67a6 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 2 Aug 2022 18:45:43 +0200
+Subject: [PATCH 06/14] spec: Add tests for recent changes
+
+---
+ .../videos/scheduled_live_extract_spec.cr     | 185 ++++++++++++++----
+ 1 file changed, 151 insertions(+), 34 deletions(-)
+
+diff --git a/spec/invidious/videos/scheduled_live_extract_spec.cr b/spec/invidious/videos/scheduled_live_extract_spec.cr
+index b80aec0cc..ff5aacd52 100644
+--- a/spec/invidious/videos/scheduled_live_extract_spec.cr
++++ b/spec/invidious/videos/scheduled_live_extract_spec.cr
+@@ -1,6 +1,6 @@
+ require "../../parsers_helper.cr"
+ 
+-Spectator.describe Invidious::Hashtag do
++Spectator.describe "parse_video_info" do
+   it "parses scheduled livestreams data (test 1)" do
+     # Enable mock
+     _player = load_mock("video/scheduled_live_nintendo.player")
+@@ -12,25 +12,50 @@ Spectator.describe Invidious::Hashtag do
+     # Some basic verifications
+     expect(typeof(info)).to eq(Hash(String, JSON::Any))
+ 
+-    expect(info["shortDescription"].as_s).to eq(
+-      "Tune in on 6/22 at 7 a.m. PT for a livestreamed Xenoblade Chronicles 3 Direct presentation featuring roughly 20 minutes of information about the upcoming RPG adventure for Nintendo Switch."
+-    )
+-    expect(info["descriptionHtml"].as_s).to eq(
+-      "Tune in on 6/22 at 7 a.m. PT for a livestreamed Xenoblade Chronicles 3 Direct presentation featuring roughly 20 minutes of information about the upcoming RPG adventure for Nintendo Switch."
+-    )
++    expect(info["videoType"].as_s).to eq("Scheduled")
++
++    # Basic video infos
+ 
++    expect(info["title"].as_s).to eq("Xenoblade Chronicles 3 Nintendo Direct")
++    expect(info["views"].as_i).to eq(160)
+     expect(info["likes"].as_i).to eq(2_283)
++    expect(info["lengthSeconds"].as_i).to eq(0_i64)
++    expect(info["published"].as_s).to eq("2022-06-22T14:00:00Z") # Unix 1655906400
+ 
+-    expect(info["genre"].as_s).to eq("Gaming")
+-    expect(info["genreUcid"].as_s).to be_empty
+-    expect(info["license"].as_s).to be_empty
++    # Extra video infos
+ 
+-    expect(info["authorThumbnail"].as_s).to eq(
+-      "https://yt3.ggpht.com/ytc/AKedOLTt4vtjREUUNdHlyu9c4gtJjG90M9jQheRlLKy44A=s48-c-k-c0x00ffffff-no-rj"
++    expect(info["allowedRegions"].as_a).to_not be_empty
++    expect(info["allowedRegions"].as_a.size).to eq(249)
++
++    expect(info["allowedRegions"].as_a).to contain(
++      "AD", "BA", "BB", "BW", "BY", "EG", "GG", "HN", "NP", "NR", "TR",
++      "TT", "TV", "TW", "TZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU",
++      "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"
+     )
+ 
+-    expect(info["authorVerified"].as_bool).to be_true
+-    expect(info["subCountText"].as_s).to eq("8.5M")
++    expect(info["keywords"].as_a).to_not be_empty
++    expect(info["keywords"].as_a.size).to eq(11)
++
++    expect(info["keywords"].as_a).to contain_exactly(
++      "nintendo",
++      "game",
++      "gameplay",
++      "fun",
++      "video game",
++      "action",
++      "adventure",
++      "rpg",
++      "play",
++      "switch",
++      "nintendo switch"
++    ).in_any_order
++
++    expect(info["allowRatings"].as_bool).to be_true
++    expect(info["isFamilyFriendly"].as_bool).to be_true
++    expect(info["isListed"].as_bool).to be_true
++    expect(info["isUpcoming"].as_bool).to be_true
++
++    # Related videos
+ 
+     expect(info["relatedVideos"].as_a.size).to eq(20)
+ 
+@@ -49,6 +74,32 @@ Spectator.describe Invidious::Hashtag do
+     expect(info["relatedVideos"][16]["view_count"].as_s).to eq("53510")
+     expect(info["relatedVideos"][16]["short_view_count"].as_s).to eq("53K")
+     expect(info["relatedVideos"][16]["author_verified"].as_s).to eq("true")
++
++    # Description
++
++    description = "Tune in on 6/22 at 7 a.m. PT for a livestreamed Xenoblade Chronicles 3 Direct presentation featuring roughly 20 minutes of information about the upcoming RPG adventure for Nintendo Switch."
++
++    expect(info["description"].as_s).to eq(description)
++    expect(info["shortDescription"].as_s).to eq(description)
++    expect(info["descriptionHtml"].as_s).to eq(description)
++
++    # Video metadata
++
++    expect(info["genre"].as_s).to eq("Gaming")
++    expect(info["genreUcid"].as_s).to be_empty
++    expect(info["license"].as_s).to be_empty
++
++    # Author infos
++
++    expect(info["author"].as_s).to eq("Nintendo")
++    expect(info["ucid"].as_s).to eq("UCGIY_O-8vW4rfX98KlMkvRg")
++
++    expect(info["authorThumbnail"].as_s).to eq(
++      "https://yt3.ggpht.com/ytc/AKedOLTt4vtjREUUNdHlyu9c4gtJjG90M9jQheRlLKy44A=s48-c-k-c0x00ffffff-no-rj"
++    )
++
++    expect(info["authorVerified"].as_bool).to be_true
++    expect(info["subCountText"].as_s).to eq("8.5M")
+   end
+ 
+   it "parses scheduled livestreams data (test 2)" do
+@@ -62,33 +113,63 @@ Spectator.describe Invidious::Hashtag do
+     # Some basic verifications
+     expect(typeof(info)).to eq(Hash(String, JSON::Any))
+ 
+-    expect(info["shortDescription"].as_s).to start_with(
+-      <<-TXT
+-      PBD Podcast Episode 171. In this episode, Patrick Bet-David is joined by Dr. Patrick Moore and Adam Sosnick.
+-
+-      Join the channel to get exclusive access to perks: https://bit.ly/3Q9rSQL
+-      TXT
+-    )
+-    expect(info["descriptionHtml"].as_s).to start_with(
+-      <<-TXT
+-      PBD Podcast Episode 171. In this episode, Patrick Bet-David is joined by Dr. Patrick Moore and Adam Sosnick.
++    expect(info["videoType"].as_s).to eq("Scheduled")
+ 
+-      Join the channel to get exclusive access to perks: <a href="https://bit.ly/3Q9rSQL">bit.ly/3Q9rSQL</a>
+-      TXT
+-    )
++    # Basic video infos
+ 
++    expect(info["title"].as_s).to eq("The Truth About Greenpeace w/ Dr. Patrick Moore | PBD Podcast | Ep. 171")
++    expect(info["views"].as_i).to eq(24)
+     expect(info["likes"].as_i).to eq(22)
++    expect(info["lengthSeconds"].as_i).to eq(0_i64)
++    expect(info["published"].as_s).to eq("2022-07-14T13:00:00Z") # Unix 1657803600
+ 
+-    expect(info["genre"].as_s).to eq("Entertainment")
+-    expect(info["genreUcid"].as_s).to be_empty
+-    expect(info["license"].as_s).to be_empty
++    # Extra video infos
+ 
+-    expect(info["authorThumbnail"].as_s).to eq(
+-      "https://yt3.ggpht.com/61ArDiQshJrvSXcGLhpFfIO3hlMabe2fksitcf6oGob0Mdr5gztdkXxRljICUodL4iuTSrtxW4A=s48-c-k-c0x00ffffff-no-rj"
++    expect(info["allowedRegions"].as_a).to_not be_empty
++    expect(info["allowedRegions"].as_a.size).to eq(249)
++
++    expect(info["allowedRegions"].as_a).to contain(
++      "AD", "AR", "BA", "BT", "CZ", "FO", "GL", "IO", "KE", "KH", "LS",
++      "LT", "MP", "NO", "PR", "RO", "SE", "SK", "SS", "SX", "SZ", "ZW"
+     )
+ 
+-    expect(info["authorVerified"].as_bool).to be_false
+-    expect(info["subCountText"].as_s).to eq("227K")
++    expect(info["keywords"].as_a).to_not be_empty
++    expect(info["keywords"].as_a.size).to eq(25)
++
++    expect(info["keywords"].as_a).to contain_exactly(
++      "Patrick Bet-David",
++      "Valeutainment",
++      "The BetDavid Podcast",
++      "The BetDavid Show",
++      "Betdavid",
++      "PBD",
++      "BetDavid show",
++      "Betdavid podcast",
++      "podcast betdavid",
++      "podcast patrick",
++      "patrick bet david podcast",
++      "Valuetainment podcast",
++      "Entrepreneurs",
++      "Entrepreneurship",
++      "Entrepreneur Motivation",
++      "Entrepreneur Advice",
++      "Startup Entrepreneurs",
++      "valuetainment",
++      "patrick bet david",
++      "PBD podcast",
++      "Betdavid show",
++      "Betdavid Podcast",
++      "Podcast Betdavid",
++      "Show Betdavid",
++      "PBDPodcast"
++    ).in_any_order
++
++    expect(info["allowRatings"].as_bool).to be_true
++    expect(info["isFamilyFriendly"].as_bool).to be_true
++    expect(info["isListed"].as_bool).to be_true
++    expect(info["isUpcoming"].as_bool).to be_true
++
++    # Related videos
+ 
+     expect(info["relatedVideos"].as_a.size).to eq(20)
+ 
+@@ -107,5 +188,41 @@ Spectator.describe Invidious::Hashtag do
+     expect(info["relatedVideos"][9]["view_count"]).to eq("26432")
+     expect(info["relatedVideos"][9]["short_view_count"]).to eq("26K")
+     expect(info["relatedVideos"][9]["author_verified"]).to eq("true")
++
++    # Description
++
++    description_start_text = <<-TXT
++    PBD Podcast Episode 171. In this episode, Patrick Bet-David is joined by Dr. Patrick Moore and Adam Sosnick.
++
++    Join the channel to get exclusive access to perks: https://bit.ly/3Q9rSQL
++    TXT
++
++    expect(info["description"].as_s).to start_with(description_start_text)
++    expect(info["shortDescription"].as_s).to start_with(description_start_text)
++
++    expect(info["descriptionHtml"].as_s).to start_with(
++      <<-TXT
++      PBD Podcast Episode 171. In this episode, Patrick Bet-David is joined by Dr. Patrick Moore and Adam Sosnick.
++
++      Join the channel to get exclusive access to perks: <a href="https://bit.ly/3Q9rSQL">bit.ly/3Q9rSQL</a>
++      TXT
++    )
++
++    # Video metadata
++
++    expect(info["genre"].as_s).to eq("Entertainment")
++    expect(info["genreUcid"].as_s).to be_empty
++    expect(info["license"].as_s).to be_empty
++
++    # Author infos
++
++    expect(info["author"].as_s).to eq("PBD Podcast")
++    expect(info["ucid"].as_s).to eq("UCGX7nGXpz-CmO_Arg-cgJ7A")
++
++    expect(info["authorThumbnail"].as_s).to eq(
++      "https://yt3.ggpht.com/61ArDiQshJrvSXcGLhpFfIO3hlMabe2fksitcf6oGob0Mdr5gztdkXxRljICUodL4iuTSrtxW4A=s48-c-k-c0x00ffffff-no-rj"
++    )
++    expect(info["authorVerified"].as_bool).to be_false
++    expect(info["subCountText"].as_s).to eq("227K")
+   end
+ end
+
+From 77e6cfd787e153e9ffe3457a0f9ea0b4742dc4f2 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Wed, 3 Aug 2022 21:31:46 +0200
+Subject: [PATCH 07/14] Videos: fix 'views' parsing for livestreams
+
+---
+ src/invidious/videos.cr | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 07006d794..b6ac48bd6 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -689,7 +689,11 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   # Basic video infos
+ 
+   title = video_details["title"]?.try &.as_s
+-  views = video_details["viewCount"]?.try &.as_s.to_i64
++
++  views = video_primary_renderer
++    .dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
++    .try &.as_s.to_i64
++  views ||= video_details["viewCount"]?.try &.as_s.to_i64
+ 
+   length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
+     .try &.as_s.to_i64
+
+From e1139bbd89c439190808a3bbb15cdf3db48a659b Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Sun, 21 Aug 2022 17:26:30 +0200
+Subject: [PATCH 08/14] spec: Add test cases for regular videos extraction
+
+---
+ mocks                                         |   2 +-
+ .../videos/regular_videos_extract_spec.cr     | 168 ++++++++++++++++++
+ 2 files changed, 169 insertions(+), 1 deletion(-)
+ create mode 100644 spec/invidious/videos/regular_videos_extract_spec.cr
+
+diff --git a/mocks b/mocks
+index c401dd920..dfd53ea6c 160000
+--- a/mocks
++++ b/mocks
+@@ -1 +1 @@
+-Subproject commit c401dd9203434b561022242c24b0c200d72284c0
++Subproject commit dfd53ea6ceb3cbcbbce6004f6ce60b330ad0f9b1
+diff --git a/spec/invidious/videos/regular_videos_extract_spec.cr b/spec/invidious/videos/regular_videos_extract_spec.cr
+new file mode 100644
+index 000000000..132b37a35
+--- /dev/null
++++ b/spec/invidious/videos/regular_videos_extract_spec.cr
+@@ -0,0 +1,168 @@
++require "../../parsers_helper.cr"
++
++Spectator.describe "parse_video_info" do
++  it "parses a regular video" do
++    # Enable mock
++    _player = load_mock("video/regular_mrbeast.player")
++    _next = load_mock("video/regular_mrbeast.next")
++
++    raw_data = _player.merge!(_next)
++    info = parse_video_info("2isYuQZMbdU", raw_data)
++
++    # Some basic verifications
++    expect(typeof(info)).to eq(Hash(String, JSON::Any))
++
++    expect(info["videoType"].as_s).to eq("Video")
++
++    # Basic video infos
++
++    expect(info["title"].as_s).to eq("I Gave My 100,000,000th Subscriber An Island")
++    expect(info["views"].as_i).to eq(32_846_329)
++    expect(info["likes"].as_i).to eq(2_611_650)
++
++    # For some reason the video length from VideoDetails and the
++    # one from microformat differs by 1s...
++    expect(info["lengthSeconds"].as_i).to be_between(930_i64, 931_i64)
++
++    expect(info["published"].as_s).to eq("2022-08-04T00:00:00Z")
++
++    # Extra video infos
++
++    expect(info["allowedRegions"].as_a).to_not be_empty
++    expect(info["allowedRegions"].as_a.size).to eq(249)
++
++    expect(info["allowedRegions"].as_a).to contain(
++      "AD", "BA", "BB", "BW", "BY", "EG", "GG", "HN", "NP", "NR", "TR",
++      "TT", "TV", "TW", "TZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU",
++      "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"
++    )
++
++    expect(info["keywords"].as_a).to be_empty
++
++    expect(info["allowRatings"].as_bool).to be_true
++    expect(info["isFamilyFriendly"].as_bool).to be_true
++    expect(info["isListed"].as_bool).to be_true
++    expect(info["isUpcoming"].as_bool).to be_false
++
++    # Related videos
++
++    expect(info["relatedVideos"].as_a.size).to eq(19)
++
++    expect(info["relatedVideos"][0]["id"]).to eq("tVWWp1PqDus")
++    expect(info["relatedVideos"][0]["title"]).to eq("100 Girls Vs 100 Boys For $500,000")
++    expect(info["relatedVideos"][0]["author"]).to eq("MrBeast")
++    expect(info["relatedVideos"][0]["ucid"]).to eq("UCX6OQ3DkcsbYNE6H8uQQuVA")
++    expect(info["relatedVideos"][0]["view_count"]).to eq("49702799")
++    expect(info["relatedVideos"][0]["short_view_count"]).to eq("49M")
++    expect(info["relatedVideos"][0]["author_verified"]).to eq("true")
++
++    # Description
++
++    description = "🚀Launch a store on Shopify, I’ll buy from 100 random stores that do ▸ "
++
++    expect(info["description"].as_s).to start_with(description)
++    expect(info["shortDescription"].as_s).to start_with(description)
++    expect(info["descriptionHtml"].as_s).to start_with(description)
++
++    # Video metadata
++
++    expect(info["genre"].as_s).to eq("Entertainment")
++    expect(info["genreUcid"].as_s).to be_empty
++    expect(info["license"].as_s).to be_empty
++
++    # Author infos
++
++    expect(info["author"].as_s).to eq("MrBeast")
++    expect(info["ucid"].as_s).to eq("UCX6OQ3DkcsbYNE6H8uQQuVA")
++
++    expect(info["authorThumbnail"].as_s).to eq(
++      "https://yt3.ggpht.com/ytc/AMLnZu84dsnlYtuUFBMC8imQs0IUcTKA9khWAmUOgQZltw=s48-c-k-c0x00ffffff-no-rj"
++    )
++
++    expect(info["authorVerified"].as_bool).to be_true
++    expect(info["subCountText"].as_s).to eq("101M")
++  end
++
++  it "parses a regular video with no descrition/comments" do
++    # Enable mock
++    _player = load_mock("video/regular_no-description.player")
++    _next = load_mock("video/regular_no-description.next")
++
++    raw_data = _player.merge!(_next)
++    info = parse_video_info("iuevw6218F0", raw_data)
++
++    # Some basic verifications
++    expect(typeof(info)).to eq(Hash(String, JSON::Any))
++
++    expect(info["videoType"].as_s).to eq("Video")
++
++    # Basic video infos
++
++    expect(info["title"].as_s).to eq("Chris Rea - Auberge")
++    expect(info["views"].as_i).to eq(10_356_197)
++    expect(info["likes"].as_i).to eq(0)
++    expect(info["lengthSeconds"].as_i).to eq(283_i64)
++    expect(info["published"].as_s).to eq("2012-05-21T00:00:00Z")
++
++    # Extra video infos
++
++    expect(info["allowedRegions"].as_a).to_not be_empty
++    expect(info["allowedRegions"].as_a.size).to eq(249)
++
++    expect(info["allowedRegions"].as_a).to contain(
++      "AD", "BA", "BB", "BW", "BY", "EG", "GG", "HN", "NP", "NR", "TR",
++      "TT", "TV", "TW", "TZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU",
++      "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"
++    )
++
++    expect(info["keywords"].as_a).to_not be_empty
++    expect(info["keywords"].as_a.size).to eq(4)
++
++    expect(info["keywords"].as_a).to contain_exactly(
++      "Chris",
++      "Rea",
++      "Auberge",
++      "1991"
++    ).in_any_order
++
++    expect(info["allowRatings"].as_bool).to be_true
++    expect(info["isFamilyFriendly"].as_bool).to be_true
++    expect(info["isListed"].as_bool).to be_true
++    expect(info["isUpcoming"].as_bool).to be_false
++
++    # Related videos
++
++    expect(info["relatedVideos"].as_a.size).to eq(19)
++
++    expect(info["relatedVideos"][0]["id"]).to eq("0bkrY_V0yZg")
++    expect(info["relatedVideos"][0]["title"]).to eq(
++      "Chris Rea Best Songs Collection -  Chris Rea  Greatest Hits Full Album 2022"
++    )
++    expect(info["relatedVideos"][0]["author"]).to eq("Rock Ultimate")
++    expect(info["relatedVideos"][0]["ucid"]).to eq("UCekSc2A19di9koUIpj8gxlQ")
++    expect(info["relatedVideos"][0]["view_count"]).to eq("1992412")
++    expect(info["relatedVideos"][0]["short_view_count"]).to eq("1.9M")
++    expect(info["relatedVideos"][0]["author_verified"]).to eq("false")
++
++    # Description
++
++    expect(info["description"].as_s).to eq(" ")
++    expect(info["shortDescription"].as_s).to be_empty
++    expect(info["descriptionHtml"].as_s).to eq("<p></p>")
++
++    # Video metadata
++
++    expect(info["genre"].as_s).to eq("Music")
++    expect(info["genreUcid"].as_s).to be_empty
++    expect(info["license"].as_s).to be_empty
++
++    # Author infos
++
++    expect(info["author"].as_s).to eq("ChrisReaOfficial")
++    expect(info["ucid"].as_s).to eq("UC_5q6nWPbD30-y6oiWF_oNA")
++
++    expect(info["authorThumbnail"].as_s).to be_empty
++    expect(info["authorVerified"].as_bool).to be_false
++    expect(info["subCountText"].as_s).to eq("-")
++  end
++end
+
+From e3323a8238d2951575f490607040a1df98093240 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Sun, 21 Aug 2022 17:28:27 +0200
+Subject: [PATCH 09/14] videos: Fix extraction code according to tests
+
+---
+ src/invidious/videos.cr | 35 +++++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index b6ac48bd6..193d33bad 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -665,20 +665,20 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   raise BrokenTubeException.new("twoColumnWatchNextResults") if !main_results
+ 
+-  primary_results = main_results.dig?("results", "results", "contents")
++  # Primary results are not available on Music videos
++  # See: https://github.com/iv-org/invidious/pull/3238#issuecomment-1207193725
++  if primary_results = main_results.dig?("results", "results", "contents")
++    video_primary_renderer = primary_results
++      .as_a.find(&.["videoPrimaryInfoRenderer"]?)
++      .try &.["videoPrimaryInfoRenderer"]
+ 
+-  raise BrokenTubeException.new("results") if !primary_results
++    video_secondary_renderer = primary_results
++      .as_a.find(&.["videoSecondaryInfoRenderer"]?)
++      .try &.["videoSecondaryInfoRenderer"]
+ 
+-  video_primary_renderer = primary_results
+-    .as_a.find(&.["videoPrimaryInfoRenderer"]?)
+-    .try &.["videoPrimaryInfoRenderer"]
+-
+-  video_secondary_renderer = primary_results
+-    .as_a.find(&.["videoSecondaryInfoRenderer"]?)
+-    .try &.["videoSecondaryInfoRenderer"]
+-
+-  raise BrokenTubeException.new("videoPrimaryInfoRenderer") if !video_primary_renderer
+-  raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
++    raise BrokenTubeException.new("videoPrimaryInfoRenderer") if !video_primary_renderer
++    raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
++  end
+ 
+   video_details = player_response.dig?("videoDetails")
+   microformat = player_response.dig?("microformat", "playerMicroformatRenderer")
+@@ -690,9 +690,12 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   title = video_details["title"]?.try &.as_s
+ 
++  # We have to try to extract viewCount from videoPrimaryInfoRenderer first,
++  # then from videoDetails, as the latter is "0" for livestreams (we want
++  # to get the amount of viewers watching).
+   views = video_primary_renderer
+-    .dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
+-    .try &.as_s.to_i64
++    .try &.dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
++      .try &.as_s.to_i64
+   views ||= video_details["viewCount"]?.try &.as_s.to_i64
+ 
+   length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
+@@ -824,7 +827,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   if live_now
+     video_type = VideoType::Livestream
+-  elsif premiere_timestamp.not_nil!
++  elsif !premiere_timestamp.nil?
+     video_type = VideoType::Scheduled
+     published = premiere_timestamp || Time.utc
+   else
+@@ -860,7 +863,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     "author"          => JSON::Any.new(author || ""),
+     "ucid"            => JSON::Any.new(ucid || ""),
+     "authorThumbnail" => JSON::Any.new(author_thumbnail.try &.as_s || ""),
+-    "authorVerified"  => JSON::Any.new(author_verified),
++    "authorVerified"  => JSON::Any.new(author_verified || false),
+     "subCountText"    => JSON::Any.new(subs_text || "-"),
+   }
+ 
+
+From af4b8f07c81bac1af177ef1312fc6cb7c02c7e65 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 23 Aug 2022 17:56:09 +0200
+Subject: [PATCH 10/14] videos: move player/next parsing code to a dedicated
+ file
+
+---
+ spec/parsers_helper.cr         |   1 +
+ src/invidious/videos.cr        | 336 --------------------------------
+ src/invidious/videos/parser.cr | 337 +++++++++++++++++++++++++++++++++
+ 3 files changed, 338 insertions(+), 336 deletions(-)
+ create mode 100644 src/invidious/videos/parser.cr
+
+diff --git a/spec/parsers_helper.cr b/spec/parsers_helper.cr
+index e91548751..bf05f9eca 100644
+--- a/spec/parsers_helper.cr
++++ b/spec/parsers_helper.cr
+@@ -12,6 +12,7 @@ require "../src/invidious/helpers/logger"
+ require "../src/invidious/helpers/utils"
+ 
+ require "../src/invidious/videos"
++require "../src/invidious/videos/*"
+ require "../src/invidious/comments"
+ 
+ require "../src/invidious/helpers/serialized_yt_data"
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 193d33bad..5b73c8621 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -534,342 +534,6 @@ class VideoRedirect < Exception
+   end
+ end
+ 
+-# Use to parse both "compactVideoRenderer" and "endScreenVideoRenderer".
+-# The former is preferred as it has more videos in it. The second has
+-# the same 11 first entries as the compact rendered.
+-#
+-# TODO: "compactRadioRenderer" (Mix) and
+-# TODO: Use a proper struct/class instead of a hacky JSON object
+-def parse_related_video(related : JSON::Any) : Hash(String, JSON::Any)?
+-  return nil if !related["videoId"]?
+-
+-  # The compact renderer has video length in seconds, where the end
+-  # screen rendered has a full text version ("42:40")
+-  length = related["lengthInSeconds"]?.try &.as_i.to_s
+-  length ||= related.dig?("lengthText", "simpleText").try do |box|
+-    decode_length_seconds(box.as_s).to_s
+-  end
+-
+-  # Both have "short", so the "long" option shouldn't be required
+-  channel_info = (related["shortBylineText"]? || related["longBylineText"]?)
+-    .try &.dig?("runs", 0)
+-
+-  author = channel_info.try &.dig?("text")
+-  author_verified = has_verified_badge?(related["ownerBadges"]?).to_s
+-
+-  ucid = channel_info.try { |ci| HelperExtractors.get_browse_id(ci) }
+-
+-  # "4,088,033 views", only available on compact renderer
+-  # and when video is not a livestream
+-  view_count = related.dig?("viewCountText", "simpleText")
+-    .try &.as_s.gsub(/\D/, "")
+-
+-  short_view_count = related.try do |r|
+-    HelperExtractors.get_short_view_count(r).to_s
+-  end
+-
+-  LOGGER.trace("parse_related_video: Found \"watchNextEndScreenRenderer\" container")
+-
+-  # TODO: when refactoring video types, make a struct for related videos
+-  # or reuse an existing type, if that fits.
+-  return {
+-    "id"               => related["videoId"],
+-    "title"            => related["title"]["simpleText"],
+-    "author"           => author || JSON::Any.new(""),
+-    "ucid"             => JSON::Any.new(ucid || ""),
+-    "length_seconds"   => JSON::Any.new(length || "0"),
+-    "view_count"       => JSON::Any.new(view_count || "0"),
+-    "short_view_count" => JSON::Any.new(short_view_count || "0"),
+-    "author_verified"  => JSON::Any.new(author_verified),
+-  }
+-end
+-
+-def extract_video_info(video_id : String, proxy_region : String? = nil, context_screen : String? = nil)
+-  # Init client config for the API
+-  client_config = YoutubeAPI::ClientConfig.new(proxy_region: proxy_region)
+-  if context_screen == "embed"
+-    client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
+-  end
+-
+-  # Fetch data from the player endpoint
+-  player_response = YoutubeAPI.player(video_id: video_id, params: "", client_config: client_config)
+-
+-  playability_status = player_response.dig?("playabilityStatus", "status").try &.as_s
+-
+-  if playability_status != "OK"
+-    subreason = player_response.dig?("playabilityStatus", "errorScreen", "playerErrorMessageRenderer", "subreason")
+-    reason = subreason.try &.[]?("simpleText").try &.as_s
+-    reason ||= subreason.try &.[]("runs").as_a.map(&.[]("text")).join("")
+-    reason ||= player_response.dig("playabilityStatus", "reason").as_s
+-
+-    # Stop here if video is not a scheduled livestream
+-    if playability_status != "LIVE_STREAM_OFFLINE"
+-      return {
+-        "reason" => JSON::Any.new(reason),
+-      }
+-    end
+-  elsif video_id != player_response.dig("videoDetails", "videoId")
+-    # YouTube may return a different video player response than expected.
+-    # See: https://github.com/TeamNewPipe/NewPipe/issues/8713
+-    raise VideoNotAvailableException.new("The video returned by YouTube isn't the requested one. (WEB client)")
+-  else
+-    reason = nil
+-  end
+-
+-  # Don't fetch the next endpoint if the video is unavailable.
+-  if {"OK", "LIVE_STREAM_OFFLINE"}.any?(playability_status)
+-    next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
+-    player_response = player_response.merge(next_response)
+-  end
+-
+-  params = parse_video_info(video_id, player_response)
+-  params["reason"] = JSON::Any.new(reason) if reason
+-
+-  # Fetch the video streams using an Android client in order to get the decrypted URLs and
+-  # maybe fix throttling issues (#2194).See for the explanation about the decrypted URLs:
+-  # https://github.com/TeamNewPipe/NewPipeExtractor/issues/562
+-  if reason.nil?
+-    if context_screen == "embed"
+-      client_config.client_type = YoutubeAPI::ClientType::AndroidScreenEmbed
+-    else
+-      client_config.client_type = YoutubeAPI::ClientType::Android
+-    end
+-    android_player = YoutubeAPI.player(video_id: video_id, params: "", client_config: client_config)
+-
+-    # Sometimes, the video is available from the web client, but not on Android, so check
+-    # that here, and fallback to the streaming data from the web client if needed.
+-    # See: https://github.com/iv-org/invidious/issues/2549
+-    if video_id != android_player.dig("videoDetails", "videoId")
+-      # YouTube may return a different video player response than expected.
+-      # See: https://github.com/TeamNewPipe/NewPipe/issues/8713
+-      raise VideoNotAvailableException.new("The video returned by YouTube isn't the requested one. (ANDROID client)")
+-    elsif android_player["playabilityStatus"]["status"] == "OK"
+-      params["streamingData"] = android_player["streamingData"]? || JSON::Any.new("")
+-    else
+-      params["streamingData"] = player_response["streamingData"]? || JSON::Any.new("")
+-    end
+-  end
+-
+-  # TODO: clean that up
+-  {"captions", "microformat", "playabilityStatus", "storyboards", "videoDetails"}.each do |f|
+-    params[f] = player_response[f] if player_response[f]?
+-  end
+-
+-  return params
+-end
+-
+-def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any)) : Hash(String, JSON::Any)
+-  # Top level elements
+-
+-  main_results = player_response.dig?("contents", "twoColumnWatchNextResults")
+-
+-  raise BrokenTubeException.new("twoColumnWatchNextResults") if !main_results
+-
+-  # Primary results are not available on Music videos
+-  # See: https://github.com/iv-org/invidious/pull/3238#issuecomment-1207193725
+-  if primary_results = main_results.dig?("results", "results", "contents")
+-    video_primary_renderer = primary_results
+-      .as_a.find(&.["videoPrimaryInfoRenderer"]?)
+-      .try &.["videoPrimaryInfoRenderer"]
+-
+-    video_secondary_renderer = primary_results
+-      .as_a.find(&.["videoSecondaryInfoRenderer"]?)
+-      .try &.["videoSecondaryInfoRenderer"]
+-
+-    raise BrokenTubeException.new("videoPrimaryInfoRenderer") if !video_primary_renderer
+-    raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
+-  end
+-
+-  video_details = player_response.dig?("videoDetails")
+-  microformat = player_response.dig?("microformat", "playerMicroformatRenderer")
+-
+-  raise BrokenTubeException.new("videoDetails") if !video_details
+-  raise BrokenTubeException.new("microformat") if !microformat
+-
+-  # Basic video infos
+-
+-  title = video_details["title"]?.try &.as_s
+-
+-  # We have to try to extract viewCount from videoPrimaryInfoRenderer first,
+-  # then from videoDetails, as the latter is "0" for livestreams (we want
+-  # to get the amount of viewers watching).
+-  views = video_primary_renderer
+-    .try &.dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
+-      .try &.as_s.to_i64
+-  views ||= video_details["viewCount"]?.try &.as_s.to_i64
+-
+-  length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
+-    .try &.as_s.to_i64
+-
+-  published = microformat["publishDate"]?
+-    .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) } || Time.utc
+-
+-  premiere_timestamp = microformat.dig?("liveBroadcastDetails", "startTimestamp")
+-    .try { |t| Time.parse_rfc3339(t.as_s) }
+-
+-  live_now = microformat.dig?("liveBroadcastDetails", "isLiveNow")
+-    .try &.as_bool || false
+-
+-  # Extra video infos
+-
+-  allowed_regions = microformat["availableCountries"]?
+-    .try &.as_a.map &.as_s || [] of String
+-
+-  allow_ratings = video_details["allowRatings"]?.try &.as_bool
+-  family_friendly = microformat["isFamilySafe"].try &.as_bool
+-  is_listed = video_details["isCrawlable"]?.try &.as_bool
+-  is_upcoming = video_details["isUpcoming"]?.try &.as_bool
+-
+-  keywords = video_details["keywords"]?
+-    .try &.as_a.map &.as_s || [] of String
+-
+-  # Related videos
+-
+-  LOGGER.debug("extract_video_info: parsing related videos...")
+-
+-  related = [] of JSON::Any
+-
+-  # Parse "compactVideoRenderer" items (under secondary results)
+-  secondary_results = main_results
+-    .dig?("secondaryResults", "secondaryResults", "results")
+-  secondary_results.try &.as_a.each do |element|
+-    if item = element["compactVideoRenderer"]?
+-      related_video = parse_related_video(item)
+-      related << JSON::Any.new(related_video) if related_video
+-    end
+-  end
+-
+-  # If nothing was found previously, fall back to end screen renderer
+-  if related.empty?
+-    # Container for "endScreenVideoRenderer" items
+-    player_overlays = player_response.dig?(
+-      "playerOverlays", "playerOverlayRenderer",
+-      "endScreen", "watchNextEndScreenRenderer", "results"
+-    )
+-
+-    player_overlays.try &.as_a.each do |element|
+-      if item = element["endScreenVideoRenderer"]?
+-        related_video = parse_related_video(item)
+-        related << JSON::Any.new(related_video) if related_video
+-      end
+-    end
+-  end
+-
+-  # Likes
+-
+-  toplevel_buttons = video_primary_renderer
+-    .try &.dig?("videoActions", "menuRenderer", "topLevelButtons")
+-
+-  if toplevel_buttons
+-    likes_button = toplevel_buttons.as_a
+-      .find(&.dig?("toggleButtonRenderer", "defaultIcon", "iconType").=== "LIKE")
+-      .try &.["toggleButtonRenderer"]
+-
+-    if likes_button
+-      likes_txt = (likes_button["defaultText"]? || likes_button["toggledText"]?)
+-        .try &.dig?("accessibility", "accessibilityData", "label")
+-      likes = likes_txt.as_s.gsub(/\D/, "").to_i64? if likes_txt
+-
+-      LOGGER.trace("extract_video_info: Found \"likes\" button. Button text is \"#{likes_txt}\"")
+-      LOGGER.debug("extract_video_info: Likes count is #{likes}") if likes
+-    end
+-  end
+-
+-  # Description
+-
+-  description = microformat.dig?("description", "simpleText").try &.as_s || ""
+-  short_description = player_response.dig?("videoDetails", "shortDescription")
+-
+-  description_html = video_secondary_renderer.try &.dig?("description", "runs")
+-    .try &.as_a.try { |t| content_to_comment_html(t, video_id) }
+-
+-  # Video metadata
+-
+-  metadata = video_secondary_renderer
+-    .try &.dig?("metadataRowContainer", "metadataRowContainerRenderer", "rows")
+-      .try &.as_a
+-
+-  genre = microformat["category"]?
+-  genre_ucid = nil
+-  license = nil
+-
+-  metadata.try &.each do |row|
+-    metadata_title = row.dig?("metadataRowRenderer", "title", "simpleText").try &.as_s
+-    contents = row.dig?("metadataRowRenderer", "contents", 0)
+-
+-    if metadata_title == "Category"
+-      contents = contents.try &.dig?("runs", 0)
+-
+-      genre = contents.try &.["text"]?
+-      genre_ucid = contents.try &.dig?("navigationEndpoint", "browseEndpoint", "browseId")
+-    elsif metadata_title == "License"
+-      license = contents.try &.dig?("runs", 0, "text")
+-    elsif metadata_title == "Licensed to YouTube by"
+-      license = contents.try &.["simpleText"]?
+-    end
+-  end
+-
+-  # Author infos
+-
+-  author = video_details["author"]?.try &.as_s
+-  ucid = video_details["channelId"]?.try &.as_s
+-
+-  if author_info = video_secondary_renderer.try &.dig?("owner", "videoOwnerRenderer")
+-    author_thumbnail = author_info.dig?("thumbnail", "thumbnails", 0, "url")
+-    author_verified = has_verified_badge?(author_info["badges"]?)
+-
+-    subs_text = author_info["subscriberCountText"]?
+-      .try { |t| t["simpleText"]? || t.dig?("runs", 0, "text") }
+-      .try &.as_s.split(" ", 2)[0]
+-  end
+-
+-  # Return data
+-
+-  if live_now
+-    video_type = VideoType::Livestream
+-  elsif !premiere_timestamp.nil?
+-    video_type = VideoType::Scheduled
+-    published = premiere_timestamp || Time.utc
+-  else
+-    video_type = VideoType::Video
+-  end
+-
+-  params = {
+-    "videoType" => JSON::Any.new(video_type.to_s),
+-    # Basic video infos
+-    "title"         => JSON::Any.new(title || ""),
+-    "views"         => JSON::Any.new(views || 0_i64),
+-    "likes"         => JSON::Any.new(likes || 0_i64),
+-    "lengthSeconds" => JSON::Any.new(length_txt || 0_i64),
+-    "published"     => JSON::Any.new(published.to_rfc3339),
+-    # Extra video infos
+-    "allowedRegions"   => JSON::Any.new(allowed_regions.map { |v| JSON::Any.new(v) }),
+-    "allowRatings"     => JSON::Any.new(allow_ratings || false),
+-    "isFamilyFriendly" => JSON::Any.new(family_friendly || false),
+-    "isListed"         => JSON::Any.new(is_listed || false),
+-    "isUpcoming"       => JSON::Any.new(is_upcoming || false),
+-    "keywords"         => JSON::Any.new(keywords.map { |v| JSON::Any.new(v) }),
+-    # Related videos
+-    "relatedVideos" => JSON::Any.new(related),
+-    # Description
+-    "description"      => JSON::Any.new(description || ""),
+-    "descriptionHtml"  => JSON::Any.new(description_html || "<p></p>"),
+-    "shortDescription" => JSON::Any.new(short_description.try &.as_s || nil),
+-    # Video metadata
+-    "genre"     => JSON::Any.new(genre.try &.as_s || ""),
+-    "genreUcid" => JSON::Any.new(genre_ucid.try &.as_s || ""),
+-    "license"   => JSON::Any.new(license.try &.as_s || ""),
+-    # Author infos
+-    "author"          => JSON::Any.new(author || ""),
+-    "ucid"            => JSON::Any.new(ucid || ""),
+-    "authorThumbnail" => JSON::Any.new(author_thumbnail.try &.as_s || ""),
+-    "authorVerified"  => JSON::Any.new(author_verified || false),
+-    "subCountText"    => JSON::Any.new(subs_text || "-"),
+-  }
+-
+-  return params
+-end
+-
+ def get_video(id, refresh = true, region = nil, force_refresh = false)
+   if (video = Invidious::Database::Videos.select(id)) && !region
+     # If record was last updated over 10 minutes ago, or video has since premiered,
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+new file mode 100644
+index 000000000..ff5d15de0
+--- /dev/null
++++ b/src/invidious/videos/parser.cr
+@@ -0,0 +1,337 @@
++require "json"
++
++# Use to parse both "compactVideoRenderer" and "endScreenVideoRenderer".
++# The former is preferred as it has more videos in it. The second has
++# the same 11 first entries as the compact rendered.
++#
++# TODO: "compactRadioRenderer" (Mix) and
++# TODO: Use a proper struct/class instead of a hacky JSON object
++def parse_related_video(related : JSON::Any) : Hash(String, JSON::Any)?
++  return nil if !related["videoId"]?
++
++  # The compact renderer has video length in seconds, where the end
++  # screen rendered has a full text version ("42:40")
++  length = related["lengthInSeconds"]?.try &.as_i.to_s
++  length ||= related.dig?("lengthText", "simpleText").try do |box|
++    decode_length_seconds(box.as_s).to_s
++  end
++
++  # Both have "short", so the "long" option shouldn't be required
++  channel_info = (related["shortBylineText"]? || related["longBylineText"]?)
++    .try &.dig?("runs", 0)
++
++  author = channel_info.try &.dig?("text")
++  author_verified = has_verified_badge?(related["ownerBadges"]?).to_s
++
++  ucid = channel_info.try { |ci| HelperExtractors.get_browse_id(ci) }
++
++  # "4,088,033 views", only available on compact renderer
++  # and when video is not a livestream
++  view_count = related.dig?("viewCountText", "simpleText")
++    .try &.as_s.gsub(/\D/, "")
++
++  short_view_count = related.try do |r|
++    HelperExtractors.get_short_view_count(r).to_s
++  end
++
++  LOGGER.trace("parse_related_video: Found \"watchNextEndScreenRenderer\" container")
++
++  # TODO: when refactoring video types, make a struct for related videos
++  # or reuse an existing type, if that fits.
++  return {
++    "id"               => related["videoId"],
++    "title"            => related["title"]["simpleText"],
++    "author"           => author || JSON::Any.new(""),
++    "ucid"             => JSON::Any.new(ucid || ""),
++    "length_seconds"   => JSON::Any.new(length || "0"),
++    "view_count"       => JSON::Any.new(view_count || "0"),
++    "short_view_count" => JSON::Any.new(short_view_count || "0"),
++    "author_verified"  => JSON::Any.new(author_verified),
++  }
++end
++
++def extract_video_info(video_id : String, proxy_region : String? = nil, context_screen : String? = nil)
++  # Init client config for the API
++  client_config = YoutubeAPI::ClientConfig.new(proxy_region: proxy_region)
++  if context_screen == "embed"
++    client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
++  end
++
++  # Fetch data from the player endpoint
++  player_response = YoutubeAPI.player(video_id: video_id, params: "", client_config: client_config)
++
++  playability_status = player_response.dig?("playabilityStatus", "status").try &.as_s
++
++  if playability_status != "OK"
++    subreason = player_response.dig?("playabilityStatus", "errorScreen", "playerErrorMessageRenderer", "subreason")
++    reason = subreason.try &.[]?("simpleText").try &.as_s
++    reason ||= subreason.try &.[]("runs").as_a.map(&.[]("text")).join("")
++    reason ||= player_response.dig("playabilityStatus", "reason").as_s
++
++    # Stop here if video is not a scheduled livestream
++    if playability_status != "LIVE_STREAM_OFFLINE"
++      return {
++        "reason" => JSON::Any.new(reason),
++      }
++    end
++  elsif video_id != player_response.dig("videoDetails", "videoId")
++    # YouTube may return a different video player response than expected.
++    # See: https://github.com/TeamNewPipe/NewPipe/issues/8713
++    raise VideoNotAvailableException.new("The video returned by YouTube isn't the requested one. (WEB client)")
++  else
++    reason = nil
++  end
++
++  # Don't fetch the next endpoint if the video is unavailable.
++  if {"OK", "LIVE_STREAM_OFFLINE"}.any?(playability_status)
++    next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
++    player_response = player_response.merge(next_response)
++  end
++
++  params = parse_video_info(video_id, player_response)
++  params["reason"] = JSON::Any.new(reason) if reason
++
++  # Fetch the video streams using an Android client in order to get the decrypted URLs and
++  # maybe fix throttling issues (#2194).See for the explanation about the decrypted URLs:
++  # https://github.com/TeamNewPipe/NewPipeExtractor/issues/562
++  if reason.nil?
++    if context_screen == "embed"
++      client_config.client_type = YoutubeAPI::ClientType::AndroidScreenEmbed
++    else
++      client_config.client_type = YoutubeAPI::ClientType::Android
++    end
++    android_player = YoutubeAPI.player(video_id: video_id, params: "", client_config: client_config)
++
++    # Sometimes, the video is available from the web client, but not on Android, so check
++    # that here, and fallback to the streaming data from the web client if needed.
++    # See: https://github.com/iv-org/invidious/issues/2549
++    if video_id != android_player.dig("videoDetails", "videoId")
++      # YouTube may return a different video player response than expected.
++      # See: https://github.com/TeamNewPipe/NewPipe/issues/8713
++      raise VideoNotAvailableException.new("The video returned by YouTube isn't the requested one. (ANDROID client)")
++    elsif android_player["playabilityStatus"]["status"] == "OK"
++      params["streamingData"] = android_player["streamingData"]? || JSON::Any.new("")
++    else
++      params["streamingData"] = player_response["streamingData"]? || JSON::Any.new("")
++    end
++  end
++
++  # TODO: clean that up
++  {"captions", "microformat", "playabilityStatus", "storyboards", "videoDetails"}.each do |f|
++    params[f] = player_response[f] if player_response[f]?
++  end
++
++  return params
++end
++
++def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any)) : Hash(String, JSON::Any)
++  # Top level elements
++
++  main_results = player_response.dig?("contents", "twoColumnWatchNextResults")
++
++  raise BrokenTubeException.new("twoColumnWatchNextResults") if !main_results
++
++  # Primary results are not available on Music videos
++  # See: https://github.com/iv-org/invidious/pull/3238#issuecomment-1207193725
++  if primary_results = main_results.dig?("results", "results", "contents")
++    video_primary_renderer = primary_results
++      .as_a.find(&.["videoPrimaryInfoRenderer"]?)
++      .try &.["videoPrimaryInfoRenderer"]
++
++    video_secondary_renderer = primary_results
++      .as_a.find(&.["videoSecondaryInfoRenderer"]?)
++      .try &.["videoSecondaryInfoRenderer"]
++
++    raise BrokenTubeException.new("videoPrimaryInfoRenderer") if !video_primary_renderer
++    raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
++  end
++
++  video_details = player_response.dig?("videoDetails")
++  microformat = player_response.dig?("microformat", "playerMicroformatRenderer")
++
++  raise BrokenTubeException.new("videoDetails") if !video_details
++  raise BrokenTubeException.new("microformat") if !microformat
++
++  # Basic video infos
++
++  title = video_details["title"]?.try &.as_s
++
++  # We have to try to extract viewCount from videoPrimaryInfoRenderer first,
++  # then from videoDetails, as the latter is "0" for livestreams (we want
++  # to get the amount of viewers watching).
++  views = video_primary_renderer
++    .try &.dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
++      .try &.as_s.to_i64
++  views ||= video_details["viewCount"]?.try &.as_s.to_i64
++
++  length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
++    .try &.as_s.to_i64
++
++  published = microformat["publishDate"]?
++    .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) } || Time.utc
++
++  premiere_timestamp = microformat.dig?("liveBroadcastDetails", "startTimestamp")
++    .try { |t| Time.parse_rfc3339(t.as_s) }
++
++  live_now = microformat.dig?("liveBroadcastDetails", "isLiveNow")
++    .try &.as_bool || false
++
++  # Extra video infos
++
++  allowed_regions = microformat["availableCountries"]?
++    .try &.as_a.map &.as_s || [] of String
++
++  allow_ratings = video_details["allowRatings"]?.try &.as_bool
++  family_friendly = microformat["isFamilySafe"].try &.as_bool
++  is_listed = video_details["isCrawlable"]?.try &.as_bool
++  is_upcoming = video_details["isUpcoming"]?.try &.as_bool
++
++  keywords = video_details["keywords"]?
++    .try &.as_a.map &.as_s || [] of String
++
++  # Related videos
++
++  LOGGER.debug("extract_video_info: parsing related videos...")
++
++  related = [] of JSON::Any
++
++  # Parse "compactVideoRenderer" items (under secondary results)
++  secondary_results = main_results
++    .dig?("secondaryResults", "secondaryResults", "results")
++  secondary_results.try &.as_a.each do |element|
++    if item = element["compactVideoRenderer"]?
++      related_video = parse_related_video(item)
++      related << JSON::Any.new(related_video) if related_video
++    end
++  end
++
++  # If nothing was found previously, fall back to end screen renderer
++  if related.empty?
++    # Container for "endScreenVideoRenderer" items
++    player_overlays = player_response.dig?(
++      "playerOverlays", "playerOverlayRenderer",
++      "endScreen", "watchNextEndScreenRenderer", "results"
++    )
++
++    player_overlays.try &.as_a.each do |element|
++      if item = element["endScreenVideoRenderer"]?
++        related_video = parse_related_video(item)
++        related << JSON::Any.new(related_video) if related_video
++      end
++    end
++  end
++
++  # Likes
++
++  toplevel_buttons = video_primary_renderer
++    .try &.dig?("videoActions", "menuRenderer", "topLevelButtons")
++
++  if toplevel_buttons
++    likes_button = toplevel_buttons.as_a
++      .find(&.dig?("toggleButtonRenderer", "defaultIcon", "iconType").=== "LIKE")
++      .try &.["toggleButtonRenderer"]
++
++    if likes_button
++      likes_txt = (likes_button["defaultText"]? || likes_button["toggledText"]?)
++        .try &.dig?("accessibility", "accessibilityData", "label")
++      likes = likes_txt.as_s.gsub(/\D/, "").to_i64? if likes_txt
++
++      LOGGER.trace("extract_video_info: Found \"likes\" button. Button text is \"#{likes_txt}\"")
++      LOGGER.debug("extract_video_info: Likes count is #{likes}") if likes
++    end
++  end
++
++  # Description
++
++  description = microformat.dig?("description", "simpleText").try &.as_s || ""
++  short_description = player_response.dig?("videoDetails", "shortDescription")
++
++  description_html = video_secondary_renderer.try &.dig?("description", "runs")
++    .try &.as_a.try { |t| content_to_comment_html(t, video_id) }
++
++  # Video metadata
++
++  metadata = video_secondary_renderer
++    .try &.dig?("metadataRowContainer", "metadataRowContainerRenderer", "rows")
++      .try &.as_a
++
++  genre = microformat["category"]?
++  genre_ucid = nil
++  license = nil
++
++  metadata.try &.each do |row|
++    metadata_title = row.dig?("metadataRowRenderer", "title", "simpleText").try &.as_s
++    contents = row.dig?("metadataRowRenderer", "contents", 0)
++
++    if metadata_title == "Category"
++      contents = contents.try &.dig?("runs", 0)
++
++      genre = contents.try &.["text"]?
++      genre_ucid = contents.try &.dig?("navigationEndpoint", "browseEndpoint", "browseId")
++    elsif metadata_title == "License"
++      license = contents.try &.dig?("runs", 0, "text")
++    elsif metadata_title == "Licensed to YouTube by"
++      license = contents.try &.["simpleText"]?
++    end
++  end
++
++  # Author infos
++
++  author = video_details["author"]?.try &.as_s
++  ucid = video_details["channelId"]?.try &.as_s
++
++  if author_info = video_secondary_renderer.try &.dig?("owner", "videoOwnerRenderer")
++    author_thumbnail = author_info.dig?("thumbnail", "thumbnails", 0, "url")
++    author_verified = has_verified_badge?(author_info["badges"]?)
++
++    subs_text = author_info["subscriberCountText"]?
++      .try { |t| t["simpleText"]? || t.dig?("runs", 0, "text") }
++      .try &.as_s.split(" ", 2)[0]
++  end
++
++  # Return data
++
++  if live_now
++    video_type = VideoType::Livestream
++  elsif !premiere_timestamp.nil?
++    video_type = VideoType::Scheduled
++    published = premiere_timestamp || Time.utc
++  else
++    video_type = VideoType::Video
++  end
++
++  params = {
++    "videoType" => JSON::Any.new(video_type.to_s),
++    # Basic video infos
++    "title"         => JSON::Any.new(title || ""),
++    "views"         => JSON::Any.new(views || 0_i64),
++    "likes"         => JSON::Any.new(likes || 0_i64),
++    "lengthSeconds" => JSON::Any.new(length_txt || 0_i64),
++    "published"     => JSON::Any.new(published.to_rfc3339),
++    # Extra video infos
++    "allowedRegions"   => JSON::Any.new(allowed_regions.map { |v| JSON::Any.new(v) }),
++    "allowRatings"     => JSON::Any.new(allow_ratings || false),
++    "isFamilyFriendly" => JSON::Any.new(family_friendly || false),
++    "isListed"         => JSON::Any.new(is_listed || false),
++    "isUpcoming"       => JSON::Any.new(is_upcoming || false),
++    "keywords"         => JSON::Any.new(keywords.map { |v| JSON::Any.new(v) }),
++    # Related videos
++    "relatedVideos" => JSON::Any.new(related),
++    # Description
++    "description"      => JSON::Any.new(description || ""),
++    "descriptionHtml"  => JSON::Any.new(description_html || "<p></p>"),
++    "shortDescription" => JSON::Any.new(short_description.try &.as_s || nil),
++    # Video metadata
++    "genre"     => JSON::Any.new(genre.try &.as_s || ""),
++    "genreUcid" => JSON::Any.new(genre_ucid.try &.as_s || ""),
++    "license"   => JSON::Any.new(license.try &.as_s || ""),
++    # Author infos
++    "author"          => JSON::Any.new(author || ""),
++    "ucid"            => JSON::Any.new(ucid || ""),
++    "authorThumbnail" => JSON::Any.new(author_thumbnail.try &.as_s || ""),
++    "authorVerified"  => JSON::Any.new(author_verified || false),
++    "subCountText"    => JSON::Any.new(subs_text || "-"),
++  }
++
++  return params
++end
+
+From 3c679b1a80afa1b134296599aa4795f34c712b91 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 23 Aug 2022 19:03:09 +0200
+Subject: [PATCH 11/14] videos: move API's JSON structure to a dedicated module
+
+---
+ src/invidious.cr                            |   2 +
+ src/invidious/channels/channels.cr          |   2 +-
+ src/invidious/channels/community.cr         |   2 +-
+ src/invidious/helpers/serialized_yt_data.cr |   4 +-
+ src/invidious/jsonify/api_v1/video_json.cr  | 255 +++++++++++++++++++
+ src/invidious/playlists.cr                  |   2 +-
+ src/invidious/routes/api/v1/misc.cr         |   2 +-
+ src/invidious/routes/api/v1/videos.cr       |   2 +-
+ src/invidious/videos.cr                     | 256 +-------------------
+ 9 files changed, 272 insertions(+), 255 deletions(-)
+ create mode 100644 src/invidious/jsonify/api_v1/video_json.cr
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 1a2a386ee..4eeca32b9 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -39,6 +39,8 @@ require "./invidious/yt_backend/*"
+ require "./invidious/frontend/*"
+ require "./invidious/videos/*"
+ 
++require "./invidious/jsonify/**"
++
+ require "./invidious/*"
+ require "./invidious/channels/*"
+ require "./invidious/user/*"
+diff --git a/src/invidious/channels/channels.cr b/src/invidious/channels/channels.cr
+index e0459cc31..e3d3d9eec 100644
+--- a/src/invidious/channels/channels.cr
++++ b/src/invidious/channels/channels.cr
+@@ -29,7 +29,7 @@ struct ChannelVideo
+       json.field "title", self.title
+       json.field "videoId", self.id
+       json.field "videoThumbnails" do
+-        generate_thumbnails(json, self.id)
++        Invidious::JSONify::APIv1.thumbnails(json, self.id)
+       end
+ 
+       json.field "lengthSeconds", self.length_seconds
+diff --git a/src/invidious/channels/community.cr b/src/invidious/channels/community.cr
+index 2a2c74aa6..8e300288f 100644
+--- a/src/invidious/channels/community.cr
++++ b/src/invidious/channels/community.cr
+@@ -138,7 +138,7 @@ def fetch_channel_community(ucid, continuation, locale, format, thin_mode)
+                         json.field "title", video_title
+                         json.field "videoId", video_id
+                         json.field "videoThumbnails" do
+-                          generate_thumbnails(json, video_id)
++                          Invidious::JSONify::APIv1.thumbnails(json, video_id)
+                         end
+ 
+                         json.field "lengthSeconds", decode_length_seconds(attachment["lengthText"]["simpleText"].as_s)
+diff --git a/src/invidious/helpers/serialized_yt_data.cr b/src/invidious/helpers/serialized_yt_data.cr
+index 3918bd130..c52e2a0dc 100644
+--- a/src/invidious/helpers/serialized_yt_data.cr
++++ b/src/invidious/helpers/serialized_yt_data.cr
+@@ -76,7 +76,7 @@ struct SearchVideo
+       json.field "authorUrl", "/channel/#{self.ucid}"
+ 
+       json.field "videoThumbnails" do
+-        generate_thumbnails(json, self.id)
++        Invidious::JSONify::APIv1.thumbnails(json, self.id)
+       end
+ 
+       json.field "description", html_to_content(self.description_html)
+@@ -155,7 +155,7 @@ struct SearchPlaylist
+               json.field "lengthSeconds", video.length_seconds
+ 
+               json.field "videoThumbnails" do
+-                generate_thumbnails(json, video.id)
++                Invidious::JSONify::APIv1.thumbnails(json, video.id)
+               end
+             end
+           end
+diff --git a/src/invidious/jsonify/api_v1/video_json.cr b/src/invidious/jsonify/api_v1/video_json.cr
+new file mode 100644
+index 000000000..1082f6d30
+--- /dev/null
++++ b/src/invidious/jsonify/api_v1/video_json.cr
+@@ -0,0 +1,255 @@
++require "json"
++
++module Invidious::JSONify::APIv1
++  extend self
++
++  def video(video : Video, json : JSON::Builder, *, locale : String?)
++    json.object do
++      json.field "type", video.video_type
++
++      json.field "title", video.title
++      json.field "videoId", video.id
++
++      json.field "error", video.info["reason"] if video.info["reason"]?
++
++      json.field "videoThumbnails" do
++        self.thumbnails(json, video.id)
++      end
++      json.field "storyboards" do
++        self.storyboards(json, video.id, video.storyboards)
++      end
++
++      json.field "description", video.description
++      json.field "descriptionHtml", video.description_html
++      json.field "published", video.published.to_unix
++      json.field "publishedText", translate(locale, "`x` ago", recode_date(video.published, locale))
++      json.field "keywords", video.keywords
++
++      json.field "viewCount", video.views
++      json.field "likeCount", video.likes
++      json.field "dislikeCount", 0_i64
++
++      json.field "paid", video.paid
++      json.field "premium", video.premium
++      json.field "isFamilyFriendly", video.is_family_friendly
++      json.field "allowedRegions", video.allowed_regions
++      json.field "genre", video.genre
++      json.field "genreUrl", video.genre_url
++
++      json.field "author", video.author
++      json.field "authorId", video.ucid
++      json.field "authorUrl", "/channel/#{video.ucid}"
++
++      json.field "authorThumbnails" do
++        json.array do
++          qualities = {32, 48, 76, 100, 176, 512}
++
++          qualities.each do |quality|
++            json.object do
++              json.field "url", video.author_thumbnail.gsub(/=s\d+/, "=s#{quality}")
++              json.field "width", quality
++              json.field "height", quality
++            end
++          end
++        end
++      end
++
++      json.field "subCountText", video.sub_count_text
++
++      json.field "lengthSeconds", video.length_seconds
++      json.field "allowRatings", video.allow_ratings
++      json.field "rating", 0_i64
++      json.field "isListed", video.is_listed
++      json.field "liveNow", video.live_now
++      json.field "isUpcoming", video.is_upcoming
++
++      if video.premiere_timestamp
++        json.field "premiereTimestamp", video.premiere_timestamp.try &.to_unix
++      end
++
++      if hlsvp = video.hls_manifest_url
++        hlsvp = hlsvp.gsub("https://manifest.googlevideo.com", HOST_URL)
++        json.field "hlsUrl", hlsvp
++      end
++
++      json.field "dashUrl", "#{HOST_URL}/api/manifest/dash/id/#{video.id}"
++
++      json.field "adaptiveFormats" do
++        json.array do
++          video.adaptive_fmts.each do |fmt|
++            json.object do
++              # Only available on regular videos, not livestreams/OTF streams
++              if init_range = fmt["initRange"]?
++                json.field "init", "#{init_range["start"]}-#{init_range["end"]}"
++              end
++              if index_range = fmt["indexRange"]?
++                json.field "index", "#{index_range["start"]}-#{index_range["end"]}"
++              end
++
++              # Not available on MPEG-4 Timed Text (`text/mp4`) streams (livestreams only)
++              json.field "bitrate", fmt["bitrate"].as_i.to_s if fmt["bitrate"]?
++
++              json.field "url", fmt["url"]
++              json.field "itag", fmt["itag"].as_i.to_s
++              json.field "type", fmt["mimeType"]
++              json.field "clen", fmt["contentLength"]? || "-1"
++              json.field "lmt", fmt["lastModified"]
++              json.field "projectionType", fmt["projectionType"]
++
++              if fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
++                fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
++                json.field "fps", fps
++                json.field "container", fmt_info["ext"]
++                json.field "encoding", fmt_info["vcodec"]? || fmt_info["acodec"]
++
++                if fmt_info["height"]?
++                  json.field "resolution", "#{fmt_info["height"]}p"
++
++                  quality_label = "#{fmt_info["height"]}p"
++                  if fps > 30
++                    quality_label += "60"
++                  end
++                  json.field "qualityLabel", quality_label
++
++                  if fmt_info["width"]?
++                    json.field "size", "#{fmt_info["width"]}x#{fmt_info["height"]}"
++                  end
++                end
++              end
++
++              # Livestream chunk infos
++              json.field "targetDurationSec", fmt["targetDurationSec"].as_i if fmt.has_key?("targetDurationSec")
++              json.field "maxDvrDurationSec", fmt["maxDvrDurationSec"].as_i if fmt.has_key?("maxDvrDurationSec")
++
++              # Audio-related data
++              json.field "audioQuality", fmt["audioQuality"] if fmt.has_key?("audioQuality")
++              json.field "audioSampleRate", fmt["audioSampleRate"].as_s.to_i if fmt.has_key?("audioSampleRate")
++              json.field "audioChannels", fmt["audioChannels"] if fmt.has_key?("audioChannels")
++
++              # Extra misc stuff
++              json.field "colorInfo", fmt["colorInfo"] if fmt.has_key?("colorInfo")
++              json.field "captionTrack", fmt["captionTrack"] if fmt.has_key?("captionTrack")
++            end
++          end
++        end
++      end
++
++      json.field "formatStreams" do
++        json.array do
++          video.fmt_stream.each do |fmt|
++            json.object do
++              json.field "url", fmt["url"]
++              json.field "itag", fmt["itag"].as_i.to_s
++              json.field "type", fmt["mimeType"]
++              json.field "quality", fmt["quality"]
++
++              fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
++              if fmt_info
++                fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
++                json.field "fps", fps
++                json.field "container", fmt_info["ext"]
++                json.field "encoding", fmt_info["vcodec"]? || fmt_info["acodec"]
++
++                if fmt_info["height"]?
++                  json.field "resolution", "#{fmt_info["height"]}p"
++
++                  quality_label = "#{fmt_info["height"]}p"
++                  if fps > 30
++                    quality_label += "60"
++                  end
++                  json.field "qualityLabel", quality_label
++
++                  if fmt_info["width"]?
++                    json.field "size", "#{fmt_info["width"]}x#{fmt_info["height"]}"
++                  end
++                end
++              end
++            end
++          end
++        end
++      end
++
++      json.field "captions" do
++        json.array do
++          video.captions.each do |caption|
++            json.object do
++              json.field "label", caption.name
++              json.field "language_code", caption.language_code
++              json.field "url", "/api/v1/captions/#{video.id}?label=#{URI.encode_www_form(caption.name)}"
++            end
++          end
++        end
++      end
++
++      json.field "recommendedVideos" do
++        json.array do
++          video.related_videos.each do |rv|
++            if rv["id"]?
++              json.object do
++                json.field "videoId", rv["id"]
++                json.field "title", rv["title"]
++                json.field "videoThumbnails" do
++                  self.thumbnails(json, rv["id"])
++                end
++
++                json.field "author", rv["author"]
++                json.field "authorUrl", "/channel/#{rv["ucid"]?}"
++                json.field "authorId", rv["ucid"]?
++                if rv["author_thumbnail"]?
++                  json.field "authorThumbnails" do
++                    json.array do
++                      qualities = {32, 48, 76, 100, 176, 512}
++
++                      qualities.each do |quality|
++                        json.object do
++                          json.field "url", rv["author_thumbnail"].gsub(/s\d+-/, "s#{quality}-")
++                          json.field "width", quality
++                          json.field "height", quality
++                        end
++                      end
++                    end
++                  end
++                end
++
++                json.field "lengthSeconds", rv["length_seconds"]?.try &.to_i
++                json.field "viewCountText", rv["short_view_count"]?
++                json.field "viewCount", rv["view_count"]?.try &.empty? ? nil : rv["view_count"].to_i64
++              end
++            end
++          end
++        end
++      end
++    end
++  end
++
++  def thumbnails(json, id)
++    json.array do
++      build_thumbnails(id).each do |thumbnail|
++        json.object do
++          json.field "quality", thumbnail[:name]
++          json.field "url", "#{thumbnail[:host]}/vi/#{id}/#{thumbnail["url"]}.jpg"
++          json.field "width", thumbnail[:width]
++          json.field "height", thumbnail[:height]
++        end
++      end
++    end
++  end
++
++  def storyboards(json, id, storyboards)
++    json.array do
++      storyboards.each do |storyboard|
++        json.object do
++          json.field "url", "/api/v1/storyboards/#{id}?width=#{storyboard[:width]}&height=#{storyboard[:height]}"
++          json.field "templateUrl", storyboard[:url]
++          json.field "width", storyboard[:width]
++          json.field "height", storyboard[:height]
++          json.field "count", storyboard[:count]
++          json.field "interval", storyboard[:interval]
++          json.field "storyboardWidth", storyboard[:storyboard_width]
++          json.field "storyboardHeight", storyboard[:storyboard_height]
++          json.field "storyboardCount", storyboard[:storyboard_count]
++        end
++      end
++    end
++  end
++end
+diff --git a/src/invidious/playlists.cr b/src/invidious/playlists.cr
+index c4eb75078..57f1f53e6 100644
+--- a/src/invidious/playlists.cr
++++ b/src/invidious/playlists.cr
+@@ -56,7 +56,7 @@ struct PlaylistVideo
+       json.field "authorUrl", "/channel/#{self.ucid}"
+ 
+       json.field "videoThumbnails" do
+-        generate_thumbnails(json, self.id)
++        Invidious::JSONify::APIv1.thumbnails(json, self.id)
+       end
+ 
+       if index
+diff --git a/src/invidious/routes/api/v1/misc.cr b/src/invidious/routes/api/v1/misc.cr
+index 844fedb87..43d360e68 100644
+--- a/src/invidious/routes/api/v1/misc.cr
++++ b/src/invidious/routes/api/v1/misc.cr
+@@ -124,7 +124,7 @@ module Invidious::Routes::API::V1::Misc
+ 
+                 json.field "videoThumbnails" do
+                   json.array do
+-                    generate_thumbnails(json, video.id)
++                    Invidious::JSONify::APIv1.thumbnails(json, video.id)
+                   end
+                 end
+ 
+diff --git a/src/invidious/routes/api/v1/videos.cr b/src/invidious/routes/api/v1/videos.cr
+index 1b7b4fa70..6f1f59164 100644
+--- a/src/invidious/routes/api/v1/videos.cr
++++ b/src/invidious/routes/api/v1/videos.cr
+@@ -185,7 +185,7 @@ module Invidious::Routes::API::V1::Videos
+       response = JSON.build do |json|
+         json.object do
+           json.field "storyboards" do
+-            generate_storyboards(json, id, storyboards)
++            Invidious::JSONify::APIv1.storyboards(json, id, storyboards)
+           end
+         end
+       end
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 5b73c8621..47a4a7f7b 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -31,234 +31,25 @@ struct Video
+     end
+   end
+ 
+-  def to_json(locale : String?, json : JSON::Builder)
+-    json.object do
+-      json.field "type", self.video_type
+-
+-      json.field "title", self.title
+-      json.field "videoId", self.id
+-
+-      json.field "error", info["reason"] if info["reason"]?
+-
+-      json.field "videoThumbnails" do
+-        generate_thumbnails(json, self.id)
+-      end
+-      json.field "storyboards" do
+-        generate_storyboards(json, self.id, self.storyboards)
+-      end
+-
+-      json.field "description", self.description
+-      json.field "descriptionHtml", self.description_html
+-      json.field "published", self.published.to_unix
+-      json.field "publishedText", translate(locale, "`x` ago", recode_date(self.published, locale))
+-      json.field "keywords", self.keywords
+-
+-      json.field "viewCount", self.views
+-      json.field "likeCount", self.likes
+-      json.field "dislikeCount", 0_i64
+-
+-      json.field "paid", self.paid
+-      json.field "premium", self.premium
+-      json.field "isFamilyFriendly", self.is_family_friendly
+-      json.field "allowedRegions", self.allowed_regions
+-      json.field "genre", self.genre
+-      json.field "genreUrl", self.genre_url
+-
+-      json.field "author", self.author
+-      json.field "authorId", self.ucid
+-      json.field "authorUrl", "/channel/#{self.ucid}"
+-
+-      json.field "authorThumbnails" do
+-        json.array do
+-          qualities = {32, 48, 76, 100, 176, 512}
+-
+-          qualities.each do |quality|
+-            json.object do
+-              json.field "url", self.author_thumbnail.gsub(/=s\d+/, "=s#{quality}")
+-              json.field "width", quality
+-              json.field "height", quality
+-            end
+-          end
+-        end
+-      end
+-
+-      json.field "subCountText", self.sub_count_text
+-
+-      json.field "lengthSeconds", self.length_seconds
+-      json.field "allowRatings", self.allow_ratings
+-      json.field "rating", 0_i64
+-      json.field "isListed", self.is_listed
+-      json.field "liveNow", self.live_now
+-      json.field "isUpcoming", self.is_upcoming
+-
+-      if self.premiere_timestamp
+-        json.field "premiereTimestamp", self.premiere_timestamp.try &.to_unix
+-      end
+-
+-      if hlsvp = self.hls_manifest_url
+-        hlsvp = hlsvp.gsub("https://manifest.googlevideo.com", HOST_URL)
+-        json.field "hlsUrl", hlsvp
+-      end
+-
+-      json.field "dashUrl", "#{HOST_URL}/api/manifest/dash/id/#{id}"
+-
+-      json.field "adaptiveFormats" do
+-        json.array do
+-          self.adaptive_fmts.each do |fmt|
+-            json.object do
+-              # Only available on regular videos, not livestreams/OTF streams
+-              if init_range = fmt["initRange"]?
+-                json.field "init", "#{init_range["start"]}-#{init_range["end"]}"
+-              end
+-              if index_range = fmt["indexRange"]?
+-                json.field "index", "#{index_range["start"]}-#{index_range["end"]}"
+-              end
+-
+-              # Not available on MPEG-4 Timed Text (`text/mp4`) streams (livestreams only)
+-              json.field "bitrate", fmt["bitrate"].as_i.to_s if fmt["bitrate"]?
+-
+-              json.field "url", fmt["url"]
+-              json.field "itag", fmt["itag"].as_i.to_s
+-              json.field "type", fmt["mimeType"]
+-              json.field "clen", fmt["contentLength"]? || "-1"
+-              json.field "lmt", fmt["lastModified"]
+-              json.field "projectionType", fmt["projectionType"]
+-
+-              if fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
+-                fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
+-                json.field "fps", fps
+-                json.field "container", fmt_info["ext"]
+-                json.field "encoding", fmt_info["vcodec"]? || fmt_info["acodec"]
+-
+-                if fmt_info["height"]?
+-                  json.field "resolution", "#{fmt_info["height"]}p"
+-
+-                  quality_label = "#{fmt_info["height"]}p"
+-                  if fps > 30
+-                    quality_label += "60"
+-                  end
+-                  json.field "qualityLabel", quality_label
+-
+-                  if fmt_info["width"]?
+-                    json.field "size", "#{fmt_info["width"]}x#{fmt_info["height"]}"
+-                  end
+-                end
+-              end
+-
+-              # Livestream chunk infos
+-              json.field "targetDurationSec", fmt["targetDurationSec"].as_i if fmt.has_key?("targetDurationSec")
+-              json.field "maxDvrDurationSec", fmt["maxDvrDurationSec"].as_i if fmt.has_key?("maxDvrDurationSec")
+-
+-              # Audio-related data
+-              json.field "audioQuality", fmt["audioQuality"] if fmt.has_key?("audioQuality")
+-              json.field "audioSampleRate", fmt["audioSampleRate"].as_s.to_i if fmt.has_key?("audioSampleRate")
+-              json.field "audioChannels", fmt["audioChannels"] if fmt.has_key?("audioChannels")
+-
+-              # Extra misc stuff
+-              json.field "colorInfo", fmt["colorInfo"] if fmt.has_key?("colorInfo")
+-              json.field "captionTrack", fmt["captionTrack"] if fmt.has_key?("captionTrack")
+-            end
+-          end
+-        end
+-      end
+-
+-      json.field "formatStreams" do
+-        json.array do
+-          self.fmt_stream.each do |fmt|
+-            json.object do
+-              json.field "url", fmt["url"]
+-              json.field "itag", fmt["itag"].as_i.to_s
+-              json.field "type", fmt["mimeType"]
+-              json.field "quality", fmt["quality"]
+-
+-              fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
+-              if fmt_info
+-                fps = fmt_info["fps"]?.try &.to_i || fmt["fps"]?.try &.as_i || 30
+-                json.field "fps", fps
+-                json.field "container", fmt_info["ext"]
+-                json.field "encoding", fmt_info["vcodec"]? || fmt_info["acodec"]
+-
+-                if fmt_info["height"]?
+-                  json.field "resolution", "#{fmt_info["height"]}p"
+-
+-                  quality_label = "#{fmt_info["height"]}p"
+-                  if fps > 30
+-                    quality_label += "60"
+-                  end
+-                  json.field "qualityLabel", quality_label
+-
+-                  if fmt_info["width"]?
+-                    json.field "size", "#{fmt_info["width"]}x#{fmt_info["height"]}"
+-                  end
+-                end
+-              end
+-            end
+-          end
+-        end
+-      end
++  # Methods for API v1 JSON
+ 
+-      json.field "captions" do
+-        json.array do
+-          self.captions.each do |caption|
+-            json.object do
+-              json.field "label", caption.name
+-              json.field "language_code", caption.language_code
+-              json.field "url", "/api/v1/captions/#{id}?label=#{URI.encode_www_form(caption.name)}"
+-            end
+-          end
+-        end
+-      end
+-
+-      json.field "recommendedVideos" do
+-        json.array do
+-          self.related_videos.each do |rv|
+-            if rv["id"]?
+-              json.object do
+-                json.field "videoId", rv["id"]
+-                json.field "title", rv["title"]
+-                json.field "videoThumbnails" do
+-                  generate_thumbnails(json, rv["id"])
+-                end
+-
+-                json.field "author", rv["author"]
+-                json.field "authorUrl", "/channel/#{rv["ucid"]?}"
+-                json.field "authorId", rv["ucid"]?
+-                if rv["author_thumbnail"]?
+-                  json.field "authorThumbnails" do
+-                    json.array do
+-                      qualities = {32, 48, 76, 100, 176, 512}
+-
+-                      qualities.each do |quality|
+-                        json.object do
+-                          json.field "url", rv["author_thumbnail"].gsub(/s\d+-/, "s#{quality}-")
+-                          json.field "width", quality
+-                          json.field "height", quality
+-                        end
+-                      end
+-                    end
+-                  end
+-                end
+-
+-                json.field "lengthSeconds", rv["length_seconds"]?.try &.to_i
+-                json.field "viewCountText", rv["short_view_count"]?
+-                json.field "viewCount", rv["view_count"]?.try &.empty? ? nil : rv["view_count"].to_i64
+-              end
+-            end
+-          end
+-        end
+-      end
+-    end
++  def to_json(locale : String?, json : JSON::Builder)
++    Invidious::JSONify::APIv1.video(self, json, locale: locale)
+   end
+ 
+   # TODO: remove the locale and follow the crystal convention
+   def to_json(locale : String?, _json : Nil)
+-    JSON.build { |json| to_json(locale, json) }
++    JSON.build do |json|
++      Invidious::JSONify::APIv1.video(self, json, locale: locale)
++    end
+   end
+ 
+   def to_json(json : JSON::Builder | Nil = nil)
+     to_json(nil, json)
+   end
+ 
++  # Misc methods
++
+   def video_type : VideoType
+     return VideoType.parse(info["videoType"]?.try &.as_s || "regular")
+   end
+@@ -630,34 +421,3 @@ def build_thumbnails(id)
+     {host: HOST_URL, height: 90, width: 120, name: "end", url: "3"},
+   }
+ end
+-
+-def generate_thumbnails(json, id)
+-  json.array do
+-    build_thumbnails(id).each do |thumbnail|
+-      json.object do
+-        json.field "quality", thumbnail[:name]
+-        json.field "url", "#{thumbnail[:host]}/vi/#{id}/#{thumbnail["url"]}.jpg"
+-        json.field "width", thumbnail[:width]
+-        json.field "height", thumbnail[:height]
+-      end
+-    end
+-  end
+-end
+-
+-def generate_storyboards(json, id, storyboards)
+-  json.array do
+-    storyboards.each do |storyboard|
+-      json.object do
+-        json.field "url", "/api/v1/storyboards/#{id}?width=#{storyboard[:width]}&height=#{storyboard[:height]}"
+-        json.field "templateUrl", storyboard[:url]
+-        json.field "width", storyboard[:width]
+-        json.field "height", storyboard[:height]
+-        json.field "count", storyboard[:count]
+-        json.field "interval", storyboard[:interval]
+-        json.field "storyboardWidth", storyboard[:storyboard_width]
+-        json.field "storyboardHeight", storyboard[:storyboard_height]
+-        json.field "storyboardCount", storyboard[:storyboard_count]
+-      end
+-    end
+-  end
+-end
+
+From 6955bfa472a7cea63c4f0eca463366c310efd2ce Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Tue, 23 Aug 2022 19:04:08 +0200
+Subject: [PATCH 12/14] videos: remove unused 'VideoRedirect' exception
+
+---
+ src/invidious/jsonify/api_v1/common.cr     | 18 ++++++++++++++++++
+ src/invidious/jsonify/api_v1/video_json.cr | 13 -------------
+ src/invidious/routes/api/manifest.cr       |  2 --
+ src/invidious/routes/api/v1/videos.cr      |  9 ---------
+ src/invidious/routes/embed.cr              |  2 --
+ src/invidious/routes/watch.cr              |  2 --
+ src/invidious/videos.cr                    |  7 -------
+ 7 files changed, 18 insertions(+), 35 deletions(-)
+ create mode 100644 src/invidious/jsonify/api_v1/common.cr
+
+diff --git a/src/invidious/jsonify/api_v1/common.cr b/src/invidious/jsonify/api_v1/common.cr
+new file mode 100644
+index 000000000..64b06465f
+--- /dev/null
++++ b/src/invidious/jsonify/api_v1/common.cr
+@@ -0,0 +1,18 @@
++require "json"
++
++module Invidious::JSONify::APIv1
++  extend self
++
++  def thumbnails(json : JSON::Builder, id : String)
++    json.array do
++      build_thumbnails(id).each do |thumbnail|
++        json.object do
++          json.field "quality", thumbnail[:name]
++          json.field "url", "#{thumbnail[:host]}/vi/#{id}/#{thumbnail["url"]}.jpg"
++          json.field "width", thumbnail[:width]
++          json.field "height", thumbnail[:height]
++        end
++      end
++    end
++  end
++end
+diff --git a/src/invidious/jsonify/api_v1/video_json.cr b/src/invidious/jsonify/api_v1/video_json.cr
+index 1082f6d30..0a5173ce6 100644
+--- a/src/invidious/jsonify/api_v1/video_json.cr
++++ b/src/invidious/jsonify/api_v1/video_json.cr
+@@ -222,19 +222,6 @@ module Invidious::JSONify::APIv1
+     end
+   end
+ 
+-  def thumbnails(json, id)
+-    json.array do
+-      build_thumbnails(id).each do |thumbnail|
+-        json.object do
+-          json.field "quality", thumbnail[:name]
+-          json.field "url", "#{thumbnail[:host]}/vi/#{id}/#{thumbnail["url"]}.jpg"
+-          json.field "width", thumbnail[:width]
+-          json.field "height", thumbnail[:height]
+-        end
+-      end
+-    end
+-  end
+-
+   def storyboards(json, id, storyboards)
+     json.array do
+       storyboards.each do |storyboard|
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index bfb8a3777..ae65f10d2 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -14,8 +14,6 @@ module Invidious::Routes::API::Manifest
+ 
+     begin
+       video = get_video(id, region: region)
+-    rescue ex : VideoRedirect
+-      return env.redirect env.request.resource.gsub(id, ex.video_id)
+     rescue ex : NotFoundException
+       haltf env, status_code: 404
+     rescue ex
+diff --git a/src/invidious/routes/api/v1/videos.cr b/src/invidious/routes/api/v1/videos.cr
+index 6f1f59164..a6b2eb4e4 100644
+--- a/src/invidious/routes/api/v1/videos.cr
++++ b/src/invidious/routes/api/v1/videos.cr
+@@ -9,9 +9,6 @@ module Invidious::Routes::API::V1::Videos
+ 
+     begin
+       video = get_video(id, region: region)
+-    rescue ex : VideoRedirect
+-      env.response.headers["Location"] = env.request.resource.gsub(id, ex.video_id)
+-      return error_json(302, "Video is unavailable", {"videoId" => ex.video_id})
+     rescue ex : NotFoundException
+       return error_json(404, ex)
+     rescue ex
+@@ -41,9 +38,6 @@ module Invidious::Routes::API::V1::Videos
+ 
+     begin
+       video = get_video(id, region: region)
+-    rescue ex : VideoRedirect
+-      env.response.headers["Location"] = env.request.resource.gsub(id, ex.video_id)
+-      return error_json(302, "Video is unavailable", {"videoId" => ex.video_id})
+     rescue ex : NotFoundException
+       haltf env, 404
+     rescue ex
+@@ -168,9 +162,6 @@ module Invidious::Routes::API::V1::Videos
+ 
+     begin
+       video = get_video(id, region: region)
+-    rescue ex : VideoRedirect
+-      env.response.headers["Location"] = env.request.resource.gsub(id, ex.video_id)
+-      return error_json(302, "Video is unavailable", {"videoId" => ex.video_id})
+     rescue ex : NotFoundException
+       haltf env, 404
+     rescue ex
+diff --git a/src/invidious/routes/embed.cr b/src/invidious/routes/embed.cr
+index 84da9993c..594dbc5b5 100644
+--- a/src/invidious/routes/embed.cr
++++ b/src/invidious/routes/embed.cr
+@@ -121,8 +121,6 @@ module Invidious::Routes::Embed
+ 
+     begin
+       video = get_video(id, region: params.region)
+-    rescue ex : VideoRedirect
+-      return env.redirect env.request.resource.gsub(id, ex.video_id)
+     rescue ex : NotFoundException
+       return error_template(404, ex)
+     rescue ex
+diff --git a/src/invidious/routes/watch.cr b/src/invidious/routes/watch.cr
+index fe1d8e548..5f481557a 100644
+--- a/src/invidious/routes/watch.cr
++++ b/src/invidious/routes/watch.cr
+@@ -61,8 +61,6 @@ module Invidious::Routes::Watch
+ 
+     begin
+       video = get_video(id, region: params.region)
+-    rescue ex : VideoRedirect
+-      return env.redirect env.request.resource.gsub(id, ex.video_id)
+     rescue ex : NotFoundException
+       LOGGER.error("get_video not found: #{id} : #{ex.message}")
+       return error_template(404, ex)
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 47a4a7f7b..e38d836ab 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -318,13 +318,6 @@ struct Video
+   getset_bool isUpcoming
+ end
+ 
+-class VideoRedirect < Exception
+-  property video_id : String
+-
+-  def initialize(@video_id)
+-  end
+-end
+-
+ def get_video(id, refresh = true, region = nil, force_refresh = false)
+   if (video = Invidious::Database::Videos.select(id)) && !region
+     # If record was last updated over 10 minutes ago, or video has since premiered,
+
+From 7a900e87c5f709cd19b3d6cc3ce4695095f923ce Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Thu, 8 Sep 2022 00:06:58 +0200
+Subject: [PATCH 13/14] videos: Support the new like button's structure
+
+---
+ src/invidious/videos/parser.cr | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index ff5d15de0..b6d95b7cb 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -231,7 +231,15 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+       .find(&.dig?("toggleButtonRenderer", "defaultIcon", "iconType").=== "LIKE")
+       .try &.["toggleButtonRenderer"]
+ 
++    # New format as of september 2022
++    likes_button ||= toplevel_buttons.dig?(
++      "segmentedLikeDislikeButtonRenderer",
++      "likeButton", "toggleButtonRenderer"
++    )
++
+     if likes_button
++      # Note: The like count from `toggledText` is off by one, as it would
++      # represent the new like count in the event where the user clicks on "like".
+       likes_txt = (likes_button["defaultText"]? || likes_button["toggledText"]?)
+         .try &.dig?("accessibility", "accessibilityData", "label")
+       likes = likes_txt.as_s.gsub(/\D/, "").to_i64? if likes_txt
+
+From b751cf5c126019d4c7a1898a6bfe84e8130e4365 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Wed, 14 Sep 2022 20:08:36 +0200
+Subject: [PATCH 14/14] videos: Fix some bugs
+
+---
+ src/invidious/jsonify/api_v1/video_json.cr | 11 ++++++++++-
+ src/invidious/videos/parser.cr             |  8 ++++----
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/src/invidious/jsonify/api_v1/video_json.cr b/src/invidious/jsonify/api_v1/video_json.cr
+index 0a5173ce6..642789aa0 100644
+--- a/src/invidious/jsonify/api_v1/video_json.cr
++++ b/src/invidious/jsonify/api_v1/video_json.cr
+@@ -93,7 +93,16 @@ module Invidious::JSONify::APIv1
+               json.field "itag", fmt["itag"].as_i.to_s
+               json.field "type", fmt["mimeType"]
+               json.field "clen", fmt["contentLength"]? || "-1"
+-              json.field "lmt", fmt["lastModified"]
++
++              # Last modified is a unix timestamp with µS, with the dot omitted.
++              # E.g: 1638056732(.)141582
++              #
++              # On livestreams, it's not present, so always fall back to the
++              # current unix timestamp (up to mS precision) for compatibility.
++              last_modified = fmt["lastModified"]?
++              last_modified ||= "#{Time.utc.to_unix_ms.to_s}000"
++              json.field "lmt", last_modified
++
+               json.field "projectionType", fmt["projectionType"]
+ 
+               if fmt_info = Invidious::Videos::Formats.itag_to_metadata?(fmt["itag"])
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index b6d95b7cb..2d35df85a 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -159,10 +159,10 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   # We have to try to extract viewCount from videoPrimaryInfoRenderer first,
+   # then from videoDetails, as the latter is "0" for livestreams (we want
+   # to get the amount of viewers watching).
+-  views = video_primary_renderer
++  views_txt = video_primary_renderer
+     .try &.dig?("viewCount", "videoViewCountRenderer", "viewCount", "runs", 0, "text")
+-      .try &.as_s.to_i64
+-  views ||= video_details["viewCount"]?.try &.as_s.to_i64
++  views_txt ||= video_details["viewCount"]?
++  views = views_txt.try &.as_s.gsub(/\D/, "").to_i64?
+ 
+   length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
+     .try &.as_s.to_i64
+@@ -268,7 +268,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   license = nil
+ 
+   metadata.try &.each do |row|
+-    metadata_title = row.dig?("metadataRowRenderer", "title", "simpleText").try &.as_s
++    metadata_title = extract_text(row.dig?("metadataRowRenderer", "title"))
+     contents = row.dig?("metadataRowRenderer", "contents", 0)
+ 
+     if metadata_title == "Category"
