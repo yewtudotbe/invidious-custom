@@ -1,0 +1,54 @@
+From 7a4254f98f823b09c8f3804e9dea2df11be1fe73 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Sat, 8 Oct 2022 13:34:52 +0200
+Subject: [PATCH 1/1] enforce playback from main website
+
+---
+ src/invidious/views/components/player.ecr | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index c3c02df0..5f66920a 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -1,10 +1,11 @@
+ <video style="outline:none;width:100%;background-color:#000" playsinline poster="<%= thumbnail %>"
+     id="player" class="on-video_player video-js player-style-<%= params.player_style %>"
++    <% hmac_key = OpenSSL::HMAC.hexdigest(:sha1, HMAC_KEY, video.id) %>
+     <% if params.autoplay %>autoplay<% end %>
+     <% if params.video_loop %>loop<% end %>
+     <% if params.controls %>controls<% end %>>
+     <% if (hlsvp = video.hls_manifest_url) && !CONFIG.disabled?("livestreams") %>
+-        <source src="<%= URI.parse(hlsvp).request_target %><% if params.local %>?local=true<% end %>" type="application/x-mpegURL" label="livestream">
++        <source src="<%= URI.parse(hlsvp).request_target %><% if params.local %>?local=true&hmac_key=<%= hmac_key %><% end %>" type="application/x-mpegURL" label="livestream">
+     <% else %>
+         <% if params.listen %>
+             <% # default to 128k m4a stream
+@@ -21,6 +22,7 @@
+                audio_streams.each_with_index do |fmt, i|
+                 src_url  = "/latest_version?id=#{video.id}&itag=#{fmt["itag"]}"
+                 src_url += "&local=true" if params.local
++                src_url += "&hmac_key=#{hmac_key}" if params.local
+ 
+                 bitrate = fmt["bitrate"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+@@ -34,7 +36,7 @@
+             <% end %>
+         <% else %>
+             <% if params.quality == "dash" %>
+-                <source src="/api/manifest/dash/id/<%= video.id %>?local=true&unique_res=1" type='application/dash+xml' label="dash">
++                <source src="/api/manifest/dash/id/<%= video.id %>?local=true&unique_res=1&hmac_key=<%= hmac_key %>" type='application/dash+xml' label="dash">
+             <% end %>
+ 
+             <%
+@@ -43,6 +45,7 @@
+             fmt_stream.each_with_index do |fmt, i|
+                 src_url  = "/latest_version?id=#{video.id}&itag=#{fmt["itag"]}"
+                 src_url += "&local=true" if params.local
++                src_url += "&hmac_key=#{hmac_key}" if params.local
+ 
+                 quality = fmt["quality"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+-- 
+2.38.0
+
