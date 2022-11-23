@@ -25,10 +25,10 @@ jobs:
       with:
         platforms: arm64
     - name: Check Out Repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Check Out Repo Invidious
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: "iv-org/invidious"
         ref: 'master'
@@ -43,21 +43,21 @@ jobs:
         sed -i 's/https:\/\/invidious.io\/donate\//\/donate/g' src/invidious/views/template.ecr
         
     - name: Login to Docker Hub
-      uses: docker/login-action@v1
+      uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v2
 
     - name: Set up build commit id
       run: echo "commitid=$(cd invidious && git log --format="%H" -n 1)-$(git log --format="%H" -n 1)" >> $GITHUB_ENV
 
     - name: Build and push alpine docker image
       id: docker_build_new
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         context: ./
         file: ./Dockerfile.new
@@ -76,7 +76,7 @@ jobs:
 
     - name: Build and push alpine docker image with API only
       id: docker_build_new_api
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         context: ./
         file: ./Dockerfile.new
@@ -89,7 +89,7 @@ jobs:
 
     - name: Build and push official crystal docker image
       id: docker_build
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         context: ./
         build-args: |
