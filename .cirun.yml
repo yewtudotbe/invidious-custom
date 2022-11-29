@@ -1,7 +1,8 @@
 runners:
   - name: big-runner
     cloud: digitalocean
-    instance_type: s-1vcpu-1gb
-    machine_image: ubuntu-22-04-x64
+    instance_type: c-4
+    machine_image: docker-20-04
+    region: ams3
     labels:
       - cirun-runner
