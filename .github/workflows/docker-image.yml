@@ -17,7 +17,7 @@ jobs:
 
   build:
 
-    runs-on: [cirun-runner, ubuntu-latest]
+    runs-on: cirun-runner
 
     steps:
     - name: Set up QEMU
