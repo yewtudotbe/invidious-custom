@@ -1,7 +1,7 @@
 runners:
   - name: big-runner
     cloud: digitalocean
-    instance_type: c-4
+    instance_type: c-2
     machine_image: docker-20-04
     region: ams3
     labels:
