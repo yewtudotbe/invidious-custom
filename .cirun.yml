@@ -1,0 +1,8 @@
+runners:
+  - name: "big-runner"
+    cloud: "do"
+    instance_type: "c-2"
+    machine_image: "ubuntu-22-04-x64"
+    region: "ubuntu-20-04-x64"
+    labels:
+      - "cirun-runner"
