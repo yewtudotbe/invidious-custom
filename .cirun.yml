@@ -1,8 +1,7 @@
 runners:
-  - name: "big-runner"
-    cloud: "do"
-    instance_type: "c-2"
-    machine_image: "ubuntu-22-04-x64"
-    region: "ubuntu-20-04-x64"
+  - name: big-runner
+    cloud: digitalocean
+    instance_type: s-1vcpu-1gb
+    machine_image: ubuntu-22-04-x64
     labels:
-      - "cirun-runner"
+      - cirun-runner
