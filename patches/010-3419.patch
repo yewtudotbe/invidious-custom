@@ -1,7 +1,7 @@
 From 99bf5197812b470f17e66aec2ca6eccc55ca6e15 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 1 Dec 2022 20:09:31 +0100
-Subject: [PATCH 01/16] shards: Bump protodec to v0.1.5
+Subject: [PATCH 01/17] shards: Bump protodec to v0.1.5
 
 ---
  shard.lock | 2 +-
@@ -38,7 +38,7 @@ index 9c9b0d37f..7ee0bb2a9 100644
 From fbcce57ce29b05c234c0c31b5f179d861e143260 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Fri, 11 Nov 2022 01:31:32 +0100
-Subject: [PATCH 02/16] channel: use extractor utils to parse tabs (+ code
+Subject: [PATCH 02/17] channel: use extractor utils to parse tabs (+ code
  cleaning)
 
 ---
@@ -130,7 +130,7 @@ index 4c442959d..bb9bd8c71 100644
 From 9588fcb5d1dd90e8591ed53a342727a0df6923c4 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sat, 3 Dec 2022 22:39:24 +0100
-Subject: [PATCH 03/16] frontend: remove paging on channel videos
+Subject: [PATCH 03/17] frontend: remove paging on channel videos
 
 ---
  src/invidious/routes/channels.cr |  5 +----
@@ -199,7 +199,7 @@ index dea86abec..878587d44 100644
 From bdc51cd20fd2df99c2fe5ddc281aada86000a783 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 10 Nov 2022 23:32:51 +0100
-Subject: [PATCH 04/16] extractors: separate 'extract' and 'parse' logic
+Subject: [PATCH 04/17] extractors: separate 'extract' and 'parse' logic
 
 ---
  src/invidious/channels/playlists.cr    |  2 +-
@@ -371,7 +371,7 @@ index edc722cf1..a4b20d047 100644
 From ce7db8d2cb87111af15de2de9faf12aae38283bb Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sat, 5 Nov 2022 18:56:35 +0100
-Subject: [PATCH 05/16] extractors: Add continuation token parser
+Subject: [PATCH 05/17] extractors: Add continuation token parser
 
 ---
  spec/invidious/hashtag_spec.cr               |  4 +-
@@ -651,7 +651,7 @@ index f82451607..0cb3c0797 100644
 From 8e8ca4fcc5cfcb7bebc3f29440d6abc1de770513 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sat, 12 Nov 2022 00:04:27 +0100
-Subject: [PATCH 06/16] Prepare to create a 'Channel' module
+Subject: [PATCH 06/17] Prepare to create a 'Channel' module
 
 ---
  src/invidious.cr                             | 9 ++++++++-
@@ -750,7 +750,7 @@ index a431a48af..8584fb9cf 100644
 From c5ee2bfc0f5e485f91e53dedc879312c3e729be8 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Fri, 11 Nov 2022 00:44:24 +0100
-Subject: [PATCH 07/16] channel: use YT API to fetch playlist items
+Subject: [PATCH 07/17] channel: use YT API to fetch playlist items
 
 ---
  src/invidious/channels/playlists.cr | 40 +++++++++++++++--------------
@@ -814,7 +814,7 @@ index 0d46499a0..8fdac3a7e 100644
 From 2903e896ecf2404bf932438a33432125a6ad1fca Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Fri, 11 Nov 2022 20:26:34 +0100
-Subject: [PATCH 08/16] channel: use YT API + extractors to fetch videos
+Subject: [PATCH 08/17] channel: use YT API + extractors to fetch videos
 
 ---
  src/invidious/channels/channels.cr      | 67 +++++++++----------
@@ -1190,7 +1190,7 @@ index f26f29f5d..2773deb78 100644
 From 52ef89f02d0ab29fd0f218abc4051328b3d96809 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sat, 12 Nov 2022 00:09:03 +0100
-Subject: [PATCH 09/16] channel: Add support for shorts and livestreams
+Subject: [PATCH 09/17] channel: Add support for shorts and livestreams
  (backend only)
 
 ---
@@ -1260,7 +1260,7 @@ index 23ad4e028..bea406c1a 100644
 From 5d6abd5301b14c24475bf7ad477a43c60ff78993 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 1 Dec 2022 23:01:31 +0100
-Subject: [PATCH 10/16] extractors: Fix ReelItemRendererParser
+Subject: [PATCH 10/17] extractors: Fix ReelItemRendererParser
 
 ---
  src/invidious/yt_backend/extractors.cr | 32 ++++++++++++++++----------
@@ -1334,7 +1334,7 @@ index baf521181..bca0dcbd5 100644
 From 6c9754e66316d903ed4f89d2cd59cd82940509f5 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Wed, 30 Nov 2022 00:29:48 +0100
-Subject: [PATCH 11/16] frontend: Add support for shorts and livestreams
+Subject: [PATCH 11/17] frontend: Add support for shorts and livestreams
 
 ---
  locales/en-US.json                     |  9 +++--
@@ -1650,7 +1650,7 @@ index c8718e7b7..56d25ef5d 100644
 From 40c666cab22693cf9d31895978ae4b4356e6579b Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sun, 4 Dec 2022 19:24:51 +0100
-Subject: [PATCH 12/16] api: Add support for shorts and livestreams
+Subject: [PATCH 12/17] api: Add support for shorts and livestreams
 
 ---
  src/invidious/routes/api/v1/channels.cr | 114 ++++++++++++++++++------
@@ -1832,7 +1832,7 @@ index 08739c3d3..0e6fba214 100644
 From b6a4de66a5414f8ae790033fc3fc9e9fda70a860 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Sun, 4 Dec 2022 23:19:25 +0100
-Subject: [PATCH 13/16] frontend: Unify the various channel pages
+Subject: [PATCH 13/17] frontend: Unify the various channel pages
 
 ---
  src/invidious/routes/channels.cr              | 33 ++++---
@@ -2307,7 +2307,7 @@ index 56d25ef5d..000000000
 From 4e3a9306260b737e2d13c6a763899b946a6ecfbb Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Mon, 5 Dec 2022 00:50:04 +0100
-Subject: [PATCH 14/16] frontend: Add support for the "featured channels" page
+Subject: [PATCH 14/17] frontend: Add support for the "featured channels" page
 
 ---
  locales/en-US.json                      |  3 +-
@@ -2509,7 +2509,7 @@ index 039f8752c..a29315ef8 100644
 From 69b8e0919fd0a410d35f5f5fccc4753f79faf940 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 22 Dec 2022 17:26:30 +0100
-Subject: [PATCH 15/16] api: Add support for the "featured channels" endpoint
+Subject: [PATCH 15/17] api: Add support for the "featured channels" endpoint
 
 ---
  src/invidious/routes/api/v1/channels.cr | 31 +++++++++++++++++++++++++
@@ -2574,7 +2574,7 @@ index 84dbed5bf..54bd82a45 100644
 From f9eb839c7ae2c29e641495c4a2affd384445bf97 Mon Sep 17 00:00:00 2001
 From: Samantaz Fox <coding@samantaz.fr>
 Date: Thu, 22 Dec 2022 13:05:13 +0100
-Subject: [PATCH 16/16] channel: remove dead playlists code
+Subject: [PATCH 16/17] channel: remove dead playlists code
 
 ---
  spec/invidious/helpers_spec.cr      |  6 ----
@@ -2661,3 +2661,114 @@ index 772eecb95..8dc824b23 100644
 -
 -  return "/browse_ajax?continuation=#{continuation}&gl=US&hl=en"
 -end
+
+From a37522a03dc12f61386fc0529a9136ad296b1228 Mon Sep 17 00:00:00 2001
+From: Samantaz Fox <coding@samantaz.fr>
+Date: Sun, 8 Jan 2023 13:50:52 +0100
+Subject: [PATCH 17/17] Implement workaround for broken shorts objects
+
+---
+ src/invidious/channels/videos.cr       | 30 ++++++++++++++++++++++----
+ src/invidious/exceptions.cr            |  5 +++++
+ src/invidious/yt_backend/extractors.cr | 26 ++++++++++++----------
+ 3 files changed, 46 insertions(+), 15 deletions(-)
+
+diff --git a/src/invidious/channels/videos.cr b/src/invidious/channels/videos.cr
+index bea406c1a..befec03d5 100644
+--- a/src/invidious/channels/videos.cr
++++ b/src/invidious/channels/videos.cr
+@@ -127,16 +127,38 @@ module Invidious::Channel::Tabs
+   #  Shorts
+   # -------------------
+ 
+-  def get_shorts(channel : AboutChannel, continuation : String? = nil)
++  private def fetch_shorts_data(ucid : String, continuation : String? = nil)
+     if continuation.nil?
+       # EgZzaG9ydHPyBgUKA5oBAA%3D%3D is the protobuf object to load "shorts"
+       # TODO: try to extract the continuation tokens that allows other sorting options
+-      initial_data = YoutubeAPI.browse(channel.ucid, params: "EgZzaG9ydHPyBgUKA5oBAA%3D%3D")
++      return YoutubeAPI.browse(ucid, params: "EgZzaG9ydHPyBgUKA5oBAA%3D%3D")
+     else
+-      initial_data = YoutubeAPI.browse(continuation: continuation)
++      return YoutubeAPI.browse(continuation: continuation)
+     end
++  end
+ 
+-    return extract_items(initial_data, channel.author, channel.ucid)
++  def get_shorts(channel : AboutChannel, continuation : String? = nil)
++    initial_data = self.fetch_shorts_data(channel.ucid, continuation)
++
++    begin
++      # Try to parse the initial data fetched above
++      return extract_items(initial_data, channel.author, channel.ucid)
++    rescue ex : RetryOnceException
++      # Sometimes, for a completely unknown reason, the "reelItemRenderer"
++      # object is missing some critical information (it happens once in about
++      # 20 subsequent requests). Refreshing the page is required to properly
++      # show the "shorts" tab.
++      #
++      # In order to make the experience smoother for the user, we simulate
++      # said page refresh by fetching again the JSON. If that still doesn't
++      # work, we raise a BrokenTubeException, as something is really broken.
++      begin
++        initial_data = self.fetch_shorts_data(channel.ucid, continuation)
++        return extract_items(initial_data, channel.author, channel.ucid)
++      rescue ex : RetryOnceException
++        raise BrokenTubeException.new "reelPlayerHeaderSupportedRenderers"
++      end
++    end
+   end
+ 
+   # -------------------
+diff --git a/src/invidious/exceptions.cr b/src/invidious/exceptions.cr
+index 425c08da1..690db9077 100644
+--- a/src/invidious/exceptions.cr
++++ b/src/invidious/exceptions.cr
+@@ -33,3 +33,8 @@ end
+ 
+ class VideoNotAvailableException < Exception
+ end
++
++# Exception used to indicate that the JSON response from YT is missing
++# some important informations, and that the query should be sent again.
++class RetryOnceException < Exception
++end
+diff --git a/src/invidious/yt_backend/extractors.cr b/src/invidious/yt_backend/extractors.cr
+index bca0dcbd5..65d107b27 100644
+--- a/src/invidious/yt_backend/extractors.cr
++++ b/src/invidious/yt_backend/extractors.cr
+@@ -408,19 +408,23 @@ private module Parsers
+     private def self.parse(item_contents, author_fallback)
+       video_id = item_contents["videoId"].as_s
+ 
+-      begin
+-        video_details_container = item_contents.dig(
+-          "navigationEndpoint", "reelWatchEndpoint",
+-          "overlay", "reelPlayerOverlayRenderer",
+-          "reelPlayerHeaderSupportedRenderers",
+-          "reelPlayerHeaderRenderer"
+-        )
+-      rescue ex : KeyError
+-        # Extract key name from original message
+-        key = /"([^"]+)"/.match(ex.message || "").try &.[1]?
+-        raise BrokenTubeException.new(key || "reelPlayerOverlayRenderer")
++      reel_player_overlay = item_contents.dig(
++        "navigationEndpoint", "reelWatchEndpoint",
++        "overlay", "reelPlayerOverlayRenderer"
++      )
++
++      # Sometimes, the "reelPlayerOverlayRenderer" object is missing the
++      # important part of the response. We use this exception to tell
++      # the calling function to fetch the content again.
++      if !reel_player_overlay.as_h.has_key?("reelPlayerHeaderSupportedRenderers")
++        raise RetryOnceException.new
+       end
+ 
++      video_details_container = reel_player_overlay.dig(
++        "reelPlayerHeaderSupportedRenderers",
++        "reelPlayerHeaderRenderer"
++      )
++
+       # Author infos
+ 
+       author = video_details_container
