@@ -1,15 +1,15 @@
-From 61099948b7789bd7821b45a8fc819141a83f4ebc Mon Sep 17 00:00:00 2001
+From 6a52c472e4c15e0561fd66a0a9363c82bd5437ce Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Sat, 8 Oct 2022 13:34:52 +0200
-Subject: [PATCH] enforce playback from main website
+Subject: [PATCH 1/1] enforce playback from main website
 
 ---
  assets/js/player.js                       |  4 ++--
  assets/js/watch.js                        |  3 +++
  src/invidious/routes/api/v1/videos.cr     | 16 ++++++++++++++++
- src/invidious/views/components/player.ecr | 11 +++++++----
+ src/invidious/views/components/player.ecr | 15 +++++++++------
  src/invidious/views/watch.ecr             |  1 +
- 5 files changed, 29 insertions(+), 6 deletions(-)
+ 5 files changed, 31 insertions(+), 8 deletions(-)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
 index ee678663..2c2bedcb 100644
@@ -110,7 +110,7 @@ index a6b2eb4e..e4f82fac 100644
      source ||= "youtube"
  
 diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
-index c3c02df0..c61ccbf4 100644
+index c3c02df0..ff4dc000 100644
 --- a/src/invidious/views/components/player.ecr
 +++ b/src/invidious/views/components/player.ecr
 @@ -1,10 +1,11 @@
@@ -134,7 +134,13 @@ index c3c02df0..c61ccbf4 100644
  
                  bitrate = fmt["bitrate"]
                  mimetype = HTML.escape(fmt["mimeType"].as_s)
-@@ -34,7 +36,7 @@
+@@ -29,12 +31,12 @@
+             %>
+                 <source src="<%= src_url %>" type='<%= mimetype %>' label="<%= bitrate %>k" selected="<%= selected %>">
+                 <% if !params.local && !CONFIG.disabled?("local") %>
+-                <source src="<%= src_url %>&local=true" type='<%= mimetype %>' hidequalityoption="true">
++                <source src="<%= src_url %>&local=true&hmac_key=<%= hmac_key %>" type='<%= mimetype %>' hidequalityoption="true">
+                 <% end %>
              <% end %>
          <% else %>
              <% if params.quality == "dash" %>
@@ -151,7 +157,14 @@ index c3c02df0..c61ccbf4 100644
  
                  quality = fmt["quality"]
                  mimetype = HTML.escape(fmt["mimeType"].as_s)
-@@ -57,11 +60,11 @@
+@@ -51,17 +54,17 @@
+             %>
+                 <source src="<%= src_url %>" type="<%= mimetype %>" label="<%= quality %>" selected="<%= selected %>">
+                 <% if !params.local && !CONFIG.disabled?("local") %>
+-                <source src="<%= src_url %>&local=true" type="<%= mimetype %>" hidequalityoption="true">
++                <source src="<%= src_url %>&local=true&hmac_key=<%= hmac_key %>" type="<%= mimetype %>" hidequalityoption="true">
+                 <% end %>
+             <% end %>
          <% end %>
  
          <% preferred_captions.each do |caption| %>
@@ -178,5 +191,4 @@ index a6f2e524..8c5b7f29 100644
  }.to_pretty_json
  %>
 -- 
-2.37.0 (Apple Git-136)
-
+2.25.1
