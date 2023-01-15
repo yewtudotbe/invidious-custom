@@ -1,0 +1,31 @@
+From 08796008a58411b01d08475dce3317598dfccb24 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20Devos?= <contact@emiliendevos.be>
+Date: Sun, 15 Jan 2023 12:07:58 +0000
+Subject: [PATCH] Don't continue when playability is LOGIN_REQUIRED
+
+---
+ src/invidious/videos/parser.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 5df4928684..593ee9ba76 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -67,7 +67,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+     reason ||= player_response.dig("playabilityStatus", "reason").as_s
+ 
+     # Stop here if video is not a scheduled livestream
+-    if !{"LIVE_STREAM_OFFLINE", "LOGIN_REQUIRED"}.any?(playability_status)
++    if !{"LIVE_STREAM_OFFLINE"}.any?(playability_status)
+       return {
+         "version" => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
+         "reason"  => JSON::Any.new(reason),
+@@ -82,7 +82,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+   end
+ 
+   # Don't fetch the next endpoint if the video is unavailable.
+-  if {"OK", "LIVE_STREAM_OFFLINE", "LOGIN_REQUIRED"}.any?(playability_status)
++  if {"OK", "LIVE_STREAM_OFFLINE"}.any?(playability_status)
+     next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
+     player_response = player_response.merge(next_response)
+   end
