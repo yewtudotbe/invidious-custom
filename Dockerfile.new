@@ -29,7 +29,7 @@ RUN crystal build ./src/invidious.cr ${add_build_args} \
 #RUN shards build --release --static sentry_crash_handler
 
 FROM alpine:3.16
-RUN apk add --no-cache librsvg ttf-opensans
+RUN apk add --no-cache librsvg ttf-opensans tini
 WORKDIR /invidious
 RUN addgroup -g 1000 -S invidious && \
     adduser -u 1000 -S invidious -G invidious
@@ -46,4 +46,5 @@ RUN chmod o+rX -R ./assets ./config ./locales
 EXPOSE 3000
 USER invidious
 #CMD [ "/invidious/sentry_crash_handler", "/invidious/invidious" ]
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD [ "/invidious/invidious" ]

@@ -21,7 +21,7 @@ RUN crystal build --release ./src/invidious.cr \
     --link-flags "-lxml2 -llzma"
 
 FROM alpine:latest
-RUN apk add --no-cache librsvg ttf-opensans
+RUN apk add --no-cache librsvg ttf-opensans tini
 WORKDIR /invidious
 RUN addgroup -g 1000 -S invidious && \
     adduser -u 1000 -S invidious -G invidious
@@ -36,4 +36,5 @@ RUN chmod o+rX -R ./assets ./config ./locales
 
 EXPOSE 3000
 USER invidious
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD [ "/invidious/invidious" ]
