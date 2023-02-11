@@ -1,0 +1,158 @@
+From 582ff8557eae31ab442d2d9b9801c27b7d1ccfb1 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Sat, 11 Feb 2023 19:56:50 +0100
+Subject: [PATCH 1/1] use redis for video cache
+
+---
+ shard.lock                       | 15 ++++++++++++---
+ shard.yml                        |  2 ++
+ src/invidious.cr                 |  2 ++
+ src/invidious/config.cr          |  1 +
+ src/invidious/database/videos.cr | 16 +++++++++++++---
+ src/invidious/videos.cr          |  2 +-
+ 6 files changed, 31 insertions(+), 7 deletions(-)
+
+diff --git a/shard.lock b/shard.lock
+index 235e4c25..8d61c101 100644
+--- a/shard.lock
++++ b/shard.lock
+@@ -1,5 +1,9 @@
+ version: 2.0
+ shards:
++  ameba:
++    git: https://github.com/crystal-ameba/ameba.git
++    version: 0.14.4
++
+   athena-negotiation:
+     git: https://github.com/athena-framework/negotiation.git
+     version: 0.1.1
+@@ -32,6 +36,10 @@ shards:
+     git: https://github.com/will/crystal-pg.git
+     version: 0.24.0
+ 
++  pool:
++    git: https://github.com/ysbaddaden/pool.git
++    version: 0.2.4
++
+   protodec:
+     git: https://github.com/iv-org/protodec.git
+     version: 0.1.5
+@@ -40,6 +48,10 @@ shards:
+     git: https://github.com/luislavena/radix.git
+     version: 0.4.1
+ 
++  redis:
++    git: https://github.com/stefanwille/crystal-redis.git
++    version: 2.8.3
++
+   spectator:
+     git: https://github.com/icy-arctic-fox/spectator.git
+     version: 0.10.4
+@@ -48,6 +60,3 @@ shards:
+     git: https://github.com/crystal-lang/crystal-sqlite3.git
+     version: 0.18.0
+ 
+-  ameba:
+-    git: https://github.com/crystal-ameba/ameba.git
+-    version: 0.14.3
+diff --git a/shard.yml b/shard.yml
+index 7ee0bb2a..97cc35e9 100644
+--- a/shard.yml
++++ b/shard.yml
+@@ -31,6 +31,8 @@ dependencies:
+   athena-negotiation:
+     github: athena-framework/negotiation
+     version: ~> 0.1.1
++  redis:
++    github: stefanwille/crystal-redis
+ 
+ development_dependencies:
+   spectator:
+diff --git a/src/invidious.cr b/src/invidious.cr
+index d4f8e0fb..e473fce4 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -31,6 +31,7 @@ require "xml"
+ require "yaml"
+ require "compress/zip"
+ require "protodec/utils"
++require "redis"
+ 
+ require "./invidious/database/*"
+ require "./invidious/database/migrations/*"
+@@ -60,6 +61,7 @@ CONFIG   = Config.load
+ HMAC_KEY = CONFIG.hmac_key || Random::Secure.hex(32)
+ 
+ PG_DB       = DB.open CONFIG.database_url
++REDIS_DB    = Redis::PooledClient.new(url: CONFIG.redis_url)
+ ARCHIVE_URL = URI.parse("https://archive.org")
+ LOGIN_URL   = URI.parse("https://accounts.google.com")
+ PUBSUB_URL  = URI.parse("https://pubsubhubbub.appspot.com")
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 9fc58409..e411ac2e 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -74,6 +74,7 @@ class Config
+   # Database configuration using 12-Factor "Database URL" syntax
+   @[YAML::Field(converter: Preferences::URIConverter)]
+   property database_url : URI = URI.parse("")
++  property redis_url : String
+   # Use polling to keep decryption function up to date
+   property decrypt_polling : Bool = false
+   # Used for crawling channels: threads should check all videos uploaded by a channel
+diff --git a/src/invidious/database/videos.cr b/src/invidious/database/videos.cr
+index 695f5b33..d2b57179 100644
+--- a/src/invidious/database/videos.cr
++++ b/src/invidious/database/videos.cr
+@@ -10,7 +10,8 @@ module Invidious::Database::Videos
+       ON CONFLICT (id) DO NOTHING
+     SQL
+ 
+-    PG_DB.exec(request, video.id, video.info.to_json, video.updated)
++    REDIS_DB.set(video.id, video.info.to_json, ex: 3600)
++    REDIS_DB.set(video.id + ":time", video.updated, ex: 3600)
+   end
+ 
+   def delete(id)
+@@ -19,7 +20,8 @@ module Invidious::Database::Videos
+       WHERE id = $1
+     SQL
+ 
+-    PG_DB.exec(request, id)
++    REDIS_DB.del(id)
++    REDIS_DB.del(id + ":time")
+   end
+ 
+   def delete_expired
+@@ -47,6 +49,14 @@ module Invidious::Database::Videos
+       WHERE id = $1
+     SQL
+ 
+-    return PG_DB.query_one?(request, id, as: Video)
++    if ((info = REDIS_DB.get(id)) && (time = REDIS_DB.get(id + ":time")))
++      return Video.new({
++        id: id,
++        info: JSON.parse(info).as_h,
++        updated: Time.parse(time, "%Y-%m-%d %H:%M:%S %z", Time::Location::UTC)
++      })
++    else
++      return nil
++    end
+   end
+ end
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 436ac82d..6524d131 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -350,7 +350,7 @@ def get_video(id, refresh = true, region = nil, force_refresh = false)
+        video.schema_version != Video::SCHEMA_VERSION # cache control
+       begin
+         video = fetch_video(id, region)
+-        Invidious::Database::Videos.update(video)
++        Invidious::Database::Videos.insert(video)
+       rescue ex
+         Invidious::Database::Videos.delete(id)
+         raise ex
+-- 
+2.39.1
+
