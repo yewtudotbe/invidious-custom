@@ -16,7 +16,7 @@ index 500a2582..7f6e7691 100644
  
    body = {
 -    "hub.callback"      => "#{HOST_URL}/feed/webhook/v1:#{time}:#{nonce}:#{OpenSSL::HMAC.hexdigest(:sha1, key, signature)}",
-+    "hub.callback"      => "https://static.yewtu.be/feed/webhook/v1:#{time}:#{nonce}:#{OpenSSL::HMAC.hexdigest(:sha1, key, signature)}",
++    "hub.callback"      => "https://webhook.yewtu.be/feed/webhook/v1:#{time}:#{nonce}:#{OpenSSL::HMAC.hexdigest(:sha1, key, signature)}",
      "hub.topic"         => "https://www.youtube.com/xml/feeds/videos.xml?#{topic}",
      "hub.verify"        => "async",
      "hub.mode"          => "subscribe",
