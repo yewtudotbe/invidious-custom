@@ -1,0 +1,25 @@
+From 99e3e9f420cfcaddd98ea3b7fbe93d2d8db1a324 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <contact@emiliendevos.be>
+Date: Sat, 4 Mar 2023 18:48:06 +0100
+Subject: [PATCH 1/1] use separate domain for webhook requests
+
+---
+ src/invidious/helpers/utils.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/helpers/utils.cr b/src/invidious/helpers/utils.cr
+index 500a2582..7f6e7691 100644
+--- a/src/invidious/helpers/utils.cr
++++ b/src/invidious/helpers/utils.cr
+@@ -291,7 +291,7 @@ def subscribe_pubsub(topic, key)
+   signature = "#{time}:#{nonce}"
+ 
+   body = {
+-    "hub.callback"      => "#{HOST_URL}/feed/webhook/v1:#{time}:#{nonce}:#{OpenSSL::HMAC.hexdigest(:sha1, key, signature)}",
++    "hub.callback"      => "https://static.yewtu.be/feed/webhook/v1:#{time}:#{nonce}:#{OpenSSL::HMAC.hexdigest(:sha1, key, signature)}",
+     "hub.topic"         => "https://www.youtube.com/xml/feeds/videos.xml?#{topic}",
+     "hub.verify"        => "async",
+     "hub.mode"          => "subscribe",
+-- 
+2.39.2
+
