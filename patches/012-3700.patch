@@ -1,0 +1,130 @@
+From 5767344746fb9806e57cacb36ddc66ee2eaffd9e Mon Sep 17 00:00:00 2001
+From: ChunkyProgrammer <78101139+ChunkyProgrammer@users.noreply.github.com>
+Date: Tue, 21 Mar 2023 23:47:52 -0400
+Subject: [PATCH] Fix parsing shorts on channel page
+
+---
+ src/invidious/channels/videos.cr       | 31 ++-------------
+ src/invidious/yt_backend/extractors.cr | 53 +++++++++++++-------------
+ 2 files changed, 30 insertions(+), 54 deletions(-)
+
+diff --git a/src/invidious/channels/videos.cr b/src/invidious/channels/videos.cr
+index befec03d5c..fc2d1044d6 100644
+--- a/src/invidious/channels/videos.cr
++++ b/src/invidious/channels/videos.cr
+@@ -127,38 +127,15 @@ module Invidious::Channel::Tabs
+   #  Shorts
+   # -------------------
+ 
+-  private def fetch_shorts_data(ucid : String, continuation : String? = nil)
++  def get_shorts(channel : AboutChannel, continuation : String? = nil)
+     if continuation.nil?
+       # EgZzaG9ydHPyBgUKA5oBAA%3D%3D is the protobuf object to load "shorts"
+       # TODO: try to extract the continuation tokens that allows other sorting options
+-      return YoutubeAPI.browse(ucid, params: "EgZzaG9ydHPyBgUKA5oBAA%3D%3D")
++      initial_data = YoutubeAPI.browse(channel.ucid, params: "EgZzaG9ydHPyBgUKA5oBAA%3D%3D")
+     else
+-      return YoutubeAPI.browse(continuation: continuation)
+-    end
+-  end
+-
+-  def get_shorts(channel : AboutChannel, continuation : String? = nil)
+-    initial_data = self.fetch_shorts_data(channel.ucid, continuation)
+-
+-    begin
+-      # Try to parse the initial data fetched above
+-      return extract_items(initial_data, channel.author, channel.ucid)
+-    rescue ex : RetryOnceException
+-      # Sometimes, for a completely unknown reason, the "reelItemRenderer"
+-      # object is missing some critical information (it happens once in about
+-      # 20 subsequent requests). Refreshing the page is required to properly
+-      # show the "shorts" tab.
+-      #
+-      # In order to make the experience smoother for the user, we simulate
+-      # said page refresh by fetching again the JSON. If that still doesn't
+-      # work, we raise a BrokenTubeException, as something is really broken.
+-      begin
+-        initial_data = self.fetch_shorts_data(channel.ucid, continuation)
+-        return extract_items(initial_data, channel.author, channel.ucid)
+-      rescue ex : RetryOnceException
+-        raise BrokenTubeException.new "reelPlayerHeaderSupportedRenderers"
+-      end
++      initial_data = YoutubeAPI.browse(continuation: continuation)
+     end
++    return extract_items(initial_data, channel.author, channel.ucid)
+   end
+ 
+   # -------------------
+diff --git a/src/invidious/yt_backend/extractors.cr b/src/invidious/yt_backend/extractors.cr
+index b14ad7b952..f952e7675f 100644
+--- a/src/invidious/yt_backend/extractors.cr
++++ b/src/invidious/yt_backend/extractors.cr
+@@ -423,42 +423,41 @@ private module Parsers
+         "overlay", "reelPlayerOverlayRenderer"
+       )
+ 
+-      # Sometimes, the "reelPlayerOverlayRenderer" object is missing the
+-      # important part of the response. We use this exception to tell
+-      # the calling function to fetch the content again.
+-      if !reel_player_overlay.as_h.has_key?("reelPlayerHeaderSupportedRenderers")
+-        raise RetryOnceException.new
+-      end
+-
+-      video_details_container = reel_player_overlay.dig(
+-        "reelPlayerHeaderSupportedRenderers",
+-        "reelPlayerHeaderRenderer"
+-      )
+-
+-      # Author infos
++      if video_details_container = reel_player_overlay.dig?(
++           "reelPlayerHeaderSupportedRenderers",
++           "reelPlayerHeaderRenderer"
++         )
++        # Author infos
+ 
+-      author = video_details_container
+-        .dig?("channelTitleText", "runs", 0, "text")
+-        .try &.as_s || author_fallback.name
++        author = video_details_container
++          .dig?("channelTitleText", "runs", 0, "text")
++          .try &.as_s || author_fallback.name
+ 
+-      ucid = video_details_container
+-        .dig?("channelNavigationEndpoint", "browseEndpoint", "browseId")
+-        .try &.as_s || author_fallback.id
++        ucid = video_details_container
++          .dig?("channelNavigationEndpoint", "browseEndpoint", "browseId")
++          .try &.as_s || author_fallback.id
+ 
+-      # Title & publication date
++        # Title & publication date
+ 
+-      title = video_details_container.dig?("reelTitleText")
+-        .try { |t| extract_text(t) } || ""
++        title = video_details_container.dig?("reelTitleText")
++          .try { |t| extract_text(t) } || ""
+ 
+-      published = video_details_container
+-        .dig?("timestampText", "simpleText")
+-        .try { |t| decode_date(t.as_s) } || Time.utc
++        published = video_details_container
++          .dig?("timestampText", "simpleText")
++          .try { |t| decode_date(t.as_s) } || Time.utc
+ 
++        # View count
++        view_count_text = video_details_container.dig?("viewCountText", "simpleText")
++      else
++        author = author_fallback.name
++        ucid = author_fallback.id
++        published = Time.utc
++        title = item_contents.dig?("headline", "simpleText").try &.as_s || ""
++      end
+       # View count
+ 
+       # View count used to be in the reelWatchEndpoint, but that changed?
+-      view_count_text = item_contents.dig?("viewCountText", "simpleText")
+-      view_count_text ||= video_details_container.dig?("viewCountText", "simpleText")
++      view_count_text ||= item_contents.dig?("viewCountText", "simpleText")
+ 
+       view_count = view_count_text.try &.as_s.gsub(/\D+/, "").to_i64? || 0_i64
+ 
