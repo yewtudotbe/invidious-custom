@@ -20,6 +20,7 @@ jobs:
     steps:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
+      if: github.event_name != 'push'
       with:
         platforms: arm64
     - name: Check Out Repo
@@ -61,37 +62,37 @@ jobs:
         file: ./Dockerfile.new
         build-args: |
             release=1
-        platforms: linux/amd64,linux/arm64/v8
+        platforms: linux/arm64/v8
         push: true
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
-    - name: patch invidious API repo
-      run: |
-        cd invidious
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your Name"
-        git am ../patches-api/*.patch
+    # - name: patch invidious API repo
+    #   run: |
+    #     cd invidious
+    #     git config --global user.email "you@example.com"
+    #     git config --global user.name "Your Name"
+    #     git am ../patches-api/*.patch
 
-    - name: Build and push alpine docker image with API only
-      id: docker_build_new_api
-      uses: docker/build-push-action@v3
-      with:
-        context: ./
-        file: ./Dockerfile.new
-        build-args: |
-            release=1
-            add_build_args=-Dapi_only
-        platforms: linux/amd64,linux/arm64/v8
-        push: true
-        tags: unixfox/invidious-custom:api-new-latest, unixfox/invidious-custom:api-new-build-${{ env.commitid }}
+    # - name: Build and push alpine docker image with API only
+    #   id: docker_build_new_api
+    #   uses: docker/build-push-action@v3
+    #   with:
+    #     context: ./
+    #     file: ./Dockerfile.new
+    #     build-args: |
+    #         release=1
+    #         add_build_args=-Dapi_only
+    #     platforms: linux/amd64,linux/arm64/v8
+    #     push: true
+    #     tags: unixfox/invidious-custom:api-new-latest, unixfox/invidious-custom:api-new-build-${{ env.commitid }}
 
-    - name: Build and push official crystal docker image
-      id: docker_build
-      uses: docker/build-push-action@v3
-      with:
-        context: ./
-        build-args: |
-            release=1
-        file: ./Dockerfile
-        push: true
-        tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.commitid }}
+    # - name: Build and push official crystal docker image
+    #   id: docker_build
+    #   uses: docker/build-push-action@v3
+    #   with:
+    #     context: ./
+    #     build-args: |
+    #         release=1
+    #     file: ./Dockerfile
+    #     push: true
+    #     tags: unixfox/invidious-custom:latest, unixfox/invidious-custom:build-${{ env.commitid }}
