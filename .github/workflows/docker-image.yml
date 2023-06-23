@@ -15,7 +15,7 @@ jobs:
 
   build:
 
-    runs-on: ${{ (github.event_name == 'push') && fromJSON('[ "buildjet-4vcpu-ubuntu-2204-arm" ]') || 'ubuntu-latest' }}
+    runs-on: 'ubuntu-latest'
 
     steps:
     - name: Set up QEMU
