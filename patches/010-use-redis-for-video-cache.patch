@@ -1,4 +1,4 @@
-From 65c62eb9a22a1c74c74000e1d760a40b1863b613 Mon Sep 17 00:00:00 2001
+From ad3266cb03987d5c424fa0d7a080e925e79955b7 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Sat, 10 Jun 2023 22:21:38 +0200
 Subject: [PATCH 1/1] use redis for video cache
@@ -69,7 +69,7 @@ index 7ee0bb2a..97cc35e9 100644
  development_dependencies:
    spectator:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 636e28a6..eb18855e 100644
+index ed84a3d1..1d953c29 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -31,6 +31,7 @@ require "xml"
@@ -80,9 +80,9 @@ index 636e28a6..eb18855e 100644
  
  require "./invidious/database/*"
  require "./invidious/database/migrations/*"
-@@ -61,7 +62,12 @@ CONFIG              = Config.load
- HMAC_KEY_CONFIGURED = CONFIG.hmac_key != nil
- HMAC_KEY            = CONFIG.hmac_key || Random::Secure.hex(32)
+@@ -60,7 +61,12 @@ alias IV = Invidious
+ CONFIG   = Config.load
+ HMAC_KEY = CONFIG.hmac_key
  
 -PG_DB       = DB.open CONFIG.database_url
 +PG_DB    = DB.open CONFIG.database_url
@@ -95,10 +95,10 @@ index 636e28a6..eb18855e 100644
  PUBSUB_URL  = URI.parse("https://pubsubhubbub.appspot.com")
  REDDIT_URL  = URI.parse("https://www.reddit.com")
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 9fc58409..524b2513 100644
+index 6fd1c3e4..b471304d 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -74,6 +74,8 @@ class Config
+@@ -72,6 +72,8 @@ class Config
    # Database configuration using 12-Factor "Database URL" syntax
    @[YAML::Field(converter: Preferences::URIConverter)]
    property database_url : URI = URI.parse("")
