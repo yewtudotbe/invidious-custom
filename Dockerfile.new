@@ -23,6 +23,7 @@ COPY ./invidious/assets/ ./assets/
 COPY ./invidious/videojs-dependencies.yml ./videojs-dependencies.yml
 RUN crystal build ./src/invidious.cr ${add_build_args} \
         --release \
+        -Ddisable_quic \
         --static --warnings all \
         --link-flags "-lxml2 -llzma";
 
