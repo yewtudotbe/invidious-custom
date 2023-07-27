@@ -572,3 +572,49 @@ index ec9908839..ba2728cd4 100644
          start_ms = line["startMs"].as_s.to_i.millisecond
          end_ms = line["endMs"].as_s.to_i.millisecond
  
+
+From 3509752b791b12bcf20e12656e3b871e5034b1a7 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Sun, 23 Jul 2023 16:50:40 -0700
+Subject: [PATCH 7/7] Rename transcript() to get_transcript() in YT API
+
+---
+ src/invidious/routes/api/v1/videos.cr   | 2 +-
+ src/invidious/yt_backend/youtube_api.cr | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/invidious/routes/api/v1/videos.cr b/src/invidious/routes/api/v1/videos.cr
+index 000e64b91..25e766d2b 100644
+--- a/src/invidious/routes/api/v1/videos.cr
++++ b/src/invidious/routes/api/v1/videos.cr
+@@ -89,7 +89,7 @@ module Invidious::Routes::API::V1::Videos
+ 
+     if CONFIG.use_innertube_for_captions
+       params = Invidious::Videos::Transcript.generate_param(id, caption.language_code, caption.auto_generated)
+-      initial_data = YoutubeAPI.transcript(params.to_s)
++      initial_data = YoutubeAPI.get_transcript(params)
+ 
+       webvtt = Invidious::Videos::Transcript.convert_transcripts_to_vtt(initial_data, caption.language_code)
+     else
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index f8aca04d9..a3335bbf7 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -558,7 +558,7 @@ module YoutubeAPI
+   end
+ 
+   ####################################################################
+-  # transcript(params)
++  # get_transcript(params, client_config?)
+   #
+   # Requests the youtubei/v1/get_transcript endpoint with the required headers
+   # and POST data in order to get a JSON reply.
+@@ -569,7 +569,7 @@ module YoutubeAPI
+   # `struct ClientConfig` above for more details).
+   #
+ 
+-  def transcript(
++  def get_transcript(
+     params : String,
+     client_config : ClientConfig | Nil = nil
+   ) : Hash(String, JSON::Any)
