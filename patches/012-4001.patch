@@ -1,7 +1,7 @@
 From 2e67b90540d35ede212866e1fb597fd57ced35d5 Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sat, 22 Jul 2023 23:55:05 -0700
-Subject: [PATCH 1/6] Add method to query /youtubei/v1/get_transcript
+Subject: [PATCH 1/7] Add method to query /youtubei/v1/get_transcript
 
 ---
  src/invidious/yt_backend/youtube_api.cr | 24 ++++++++++++++++++++++++
@@ -46,7 +46,7 @@ index 3dd9e9d83..f8aca04d9 100644
 From 7e5935a9da5355bbdd4c047edf692b0ce57722c7 Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sun, 23 Jul 2023 00:54:43 -0700
-Subject: [PATCH 2/6] Rename Caption struct to CaptionMetadata
+Subject: [PATCH 2/7] Rename Caption struct to CaptionMetadata
 
 The Caption object does not actually store any text lines for the
 subtitles. Instead it stores the metadata needed to display and fetch
@@ -154,7 +154,7 @@ index dfda14341..b1061ee82 100644
 From 8e18d445a7adf9a0c0887249003a7b84f0fb95af Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sun, 23 Jul 2023 01:52:53 -0700
-Subject: [PATCH 3/6] Add method to generate params for transcripts api
+Subject: [PATCH 3/7] Add method to generate params for transcripts api
 
 ---
  src/invidious/videos/transcript.cr | 34 ++++++++++++++++++++++++++++++
@@ -205,7 +205,7 @@ index 000000000..c50f7569d
 From 4b3ac1a757a5ee14919e83a84de31a3d0bd14a4c Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sun, 23 Jul 2023 03:22:19 -0700
-Subject: [PATCH 4/6] Add method to parse transcript JSON into structs
+Subject: [PATCH 4/7] Add method to parse transcript JSON into structs
 
 ---
  src/invidious/videos/transcript.cr | 37 ++++++++++++++++++++++++++++++
@@ -269,7 +269,7 @@ index c50f7569d..0d8b0b253 100644
 From caac7e21668dd88eaf3d57ddc300427885af0a23 Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sun, 23 Jul 2023 03:52:26 -0700
-Subject: [PATCH 5/6] Add method to convert transcripts response to vtt
+Subject: [PATCH 5/7] Add method to convert transcripts response to vtt
 
 ---
  src/invidious/videos/transcript.cr | 39 ++++++++++++++++++++++++++----
@@ -341,7 +341,7 @@ index 0d8b0b253..ec9908839 100644
 From e4942b188f5c192d5693687698db9b106571332c Mon Sep 17 00:00:00 2001
 From: syeopite <syeopite@syeopite.dev>
 Date: Sun, 23 Jul 2023 05:02:02 -0700
-Subject: [PATCH 6/6] Integrate transcript captions into captions API
+Subject: [PATCH 6/7] Integrate transcript captions into captions API
 
 ---
  config/config.example.yml             |  13 +++
