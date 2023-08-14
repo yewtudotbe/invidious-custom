@@ -1,32 +1,22 @@
-From ad3266cb03987d5c424fa0d7a080e925e79955b7 Mon Sep 17 00:00:00 2001
+From 545d6f2c8bc66d783d5ad3c70ea39b340ba6adcd Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Sat, 10 Jun 2023 22:21:38 +0200
 Subject: [PATCH 1/1] use redis for video cache
 
 ---
- shard.lock                       | 15 ++++++++++++---
+ shard.lock                       |  8 ++++++++
  shard.yml                        |  2 ++
  src/invidious.cr                 |  8 +++++++-
  src/invidious/config.cr          |  2 ++
  src/invidious/database/videos.cr | 16 +++++++++++++---
  src/invidious/videos.cr          |  2 +-
- 6 files changed, 37 insertions(+), 8 deletions(-)
+ 6 files changed, 33 insertions(+), 5 deletions(-)
 
 diff --git a/shard.lock b/shard.lock
-index 235e4c25..385174da 100644
+index efb60a59..1bb39934 100644
 --- a/shard.lock
 +++ b/shard.lock
-@@ -1,5 +1,9 @@
- version: 2.0
- shards:
-+  ameba:
-+    git: https://github.com/crystal-ameba/ameba.git
-+    version: 0.14.4
-+
-   athena-negotiation:
-     git: https://github.com/athena-framework/negotiation.git
-     version: 0.1.1
-@@ -32,6 +36,10 @@ shards:
+@@ -32,6 +32,10 @@ shards:
      git: https://github.com/will/crystal-pg.git
      version: 0.24.0
  
@@ -37,7 +27,7 @@ index 235e4c25..385174da 100644
    protodec:
      git: https://github.com/iv-org/protodec.git
      version: 0.1.5
-@@ -40,6 +48,10 @@ shards:
+@@ -40,6 +44,10 @@ shards:
      git: https://github.com/luislavena/radix.git
      version: 0.4.1
  
@@ -48,18 +38,11 @@ index 235e4c25..385174da 100644
    spectator:
      git: https://github.com/icy-arctic-fox/spectator.git
      version: 0.10.4
-@@ -48,6 +60,3 @@ shards:
-     git: https://github.com/crystal-lang/crystal-sqlite3.git
-     version: 0.18.0
- 
--  ameba:
--    git: https://github.com/crystal-ameba/ameba.git
--    version: 0.14.3
 diff --git a/shard.yml b/shard.yml
-index 7ee0bb2a..97cc35e9 100644
+index be06a7df..eb59ec32 100644
 --- a/shard.yml
 +++ b/shard.yml
-@@ -31,6 +31,8 @@ dependencies:
+@@ -28,6 +28,8 @@ dependencies:
    athena-negotiation:
      github: athena-framework/negotiation
      version: ~> 0.1.1
@@ -69,7 +52,7 @@ index 7ee0bb2a..97cc35e9 100644
  development_dependencies:
    spectator:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index ed84a3d1..1d953c29 100644
+index 011c427f..ec8b3520 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -31,6 +31,7 @@ require "xml"
@@ -95,7 +78,7 @@ index ed84a3d1..1d953c29 100644
  PUBSUB_URL  = URI.parse("https://pubsubhubbub.appspot.com")
  REDDIT_URL  = URI.parse("https://www.reddit.com")
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 6fd1c3e4..b471304d 100644
+index 87ba324e..6cdb374f 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -72,6 +72,8 @@ class Config
@@ -161,5 +144,4 @@ index f38b33e5..2a22a862 100644
          Invidious::Database::Videos.delete(id)
          raise ex
 -- 
-2.40.1
-
+2.41.0
