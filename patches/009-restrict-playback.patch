@@ -1,4 +1,4 @@
-From fa9097ebf4caaae262adfe5548062752644bef0e Mon Sep 17 00:00:00 2001
+From d871952d1d9957ec31254c22018e523c6d9e00ff Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Sat, 8 Oct 2022 13:34:52 +0200
 Subject: [PATCH 1/1] enforce playback from main website
@@ -7,9 +7,9 @@ Subject: [PATCH 1/1] enforce playback from main website
  assets/js/player.js                       |  4 ++--
  assets/js/watch.js                        |  3 +++
  src/invidious/routes/api/v1/videos.cr     | 16 ++++++++++++++++
- src/invidious/views/components/player.ecr | 19 +++++++++++--------
+ src/invidious/views/components/player.ecr | 11 +++++++----
  src/invidious/views/watch.ecr             |  1 +
- 5 files changed, 33 insertions(+), 10 deletions(-)
+ 5 files changed, 29 insertions(+), 6 deletions(-)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
 index bb53ac24..43bd902f 100644
@@ -110,7 +110,7 @@ index af4fc806..f1bd2dd6 100644
      source ||= "youtube"
  
 diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
-index c3c02df0..0e673803 100644
+index c3c02df0..d046c791 100644
 --- a/src/invidious/views/components/player.ecr
 +++ b/src/invidious/views/components/player.ecr
 @@ -1,10 +1,11 @@
@@ -134,16 +134,7 @@ index c3c02df0..0e673803 100644
                  src_url += "&local=true" if params.local
  
                  bitrate = fmt["bitrate"]
-@@ -27,14 +29,14 @@
- 
-                 selected = (i == best_m4a_stream_index)
-             %>
--                <source src="<%= src_url %>" type='<%= mimetype %>' label="<%= bitrate %>k" selected="<%= selected %>">
-+                <source src="<%= src_url %>&hmac_key=<%= hmac_key %>" type='<%= mimetype %>' label="<%= bitrate %>k" selected="<%= selected %>">
-                 <% if !params.local && !CONFIG.disabled?("local") %>
--                <source src="<%= src_url %>&local=true" type='<%= mimetype %>' hidequalityoption="true">
-+                <source src="<%= src_url %>&local=true&hmac_key=<%= hmac_key %>" type='<%= mimetype %>' hidequalityoption="true">
-                 <% end %>
+@@ -34,7 +36,7 @@
              <% end %>
          <% else %>
              <% if params.quality == "dash" %>
@@ -160,17 +151,7 @@ index c3c02df0..0e673803 100644
                  src_url += "&local=true" if params.local
  
                  quality = fmt["quality"]
-@@ -49,19 +52,19 @@
- 
-                 selected = params.quality ? (params.quality == quality) : (i == 0)
-             %>
--                <source src="<%= src_url %>" type="<%= mimetype %>" label="<%= quality %>" selected="<%= selected %>">
-+                <source src="<%= src_url %>&hmac_key=<%= hmac_key %>" type="<%= mimetype %>" label="<%= quality %>" selected="<%= selected %>">
-                 <% if !params.local && !CONFIG.disabled?("local") %>
--                <source src="<%= src_url %>&local=true" type="<%= mimetype %>" hidequalityoption="true">
-+                <source src="<%= src_url %>&local=true&hmac_key=<%= hmac_key %>" type="<%= mimetype %>" hidequalityoption="true">
-                 <% end %>
-             <% end %>
+@@ -57,11 +60,11 @@
          <% end %>
  
          <% preferred_captions.each do |caption| %>
