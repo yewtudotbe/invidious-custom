@@ -62,7 +62,7 @@ jobs:
         file: ./Dockerfile.new
         build-args: |
             release=1
-        platforms: linux/arm64/v8
+        platforms: linux/arm64/v8,linux/amd64
         push: true
         tags: unixfox/invidious-custom:new-latest, unixfox/invidious-custom:new-build-${{ env.commitid }}
 
