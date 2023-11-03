@@ -1,0 +1,185 @@
+From 9294d2604049d79eed198f9f3de5b4f805e4b964 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 1 Sep 2023 11:09:58 -0700
+Subject: [PATCH 1/3] Add stats-based /videoplayback blockage status
+
+---
+ src/invidious/helpers/helpers.cr             | 17 +++++++++++++++++
+ src/invidious/jobs/statistics_refresh_job.cr | 10 ++++++++++
+ src/invidious/routes/api/v1/misc.cr          | 16 ++++++++++++++++
+ src/invidious/routes/video_playback.cr       |  5 +++++
+ 4 files changed, 48 insertions(+)
+
+diff --git a/src/invidious/helpers/helpers.cr b/src/invidious/helpers/helpers.cr
+index 23ff0da93..38b96db75 100644
+--- a/src/invidious/helpers/helpers.cr
++++ b/src/invidious/helpers/helpers.cr
+@@ -208,3 +208,20 @@ def proxy_file(response, env)
+     IO.copy response.body_io, env.response
+   end
+ end
++
++# Fetch the playback requests tracker from the statistics endpoint.
++#
++# Creates a new tracker when unavailable.
++def get_playback_statistic
++  if (tracker = Invidious::Jobs::StatisticsRefreshJob::STATISTICS["playback"]) && tracker.as(Hash).empty?
++    tracker = {
++      "totalRequests"      => 0_i64,
++      "successfulRequests" => 0_i64,
++      "ratio"              => 0_f64,
++    }
++
++    Invidious::Jobs::StatisticsRefreshJob::STATISTICS["playback"] = tracker
++  end
++
++  return tracker
++end
+diff --git a/src/invidious/jobs/statistics_refresh_job.cr b/src/invidious/jobs/statistics_refresh_job.cr
+index a113bd778..4d3cb017c 100644
+--- a/src/invidious/jobs/statistics_refresh_job.cr
++++ b/src/invidious/jobs/statistics_refresh_job.cr
+@@ -18,6 +18,13 @@ class Invidious::Jobs::StatisticsRefreshJob < Invidious::Jobs::BaseJob
+       "updatedAt"              => Time.utc.to_unix,
+       "lastChannelRefreshedAt" => 0_i64,
+     },
++
++    #
++    #    "totalRequests" => 0_i64,
++    #    "successfulRequests" => 0_i64
++    #    "ratio"   => 0_i64
++    #
++    "playback" => {} of String => Int64 | Float64,
+   }
+ 
+   private getter db : DB::Database
+@@ -56,5 +63,8 @@ class Invidious::Jobs::StatisticsRefreshJob < Invidious::Jobs::BaseJob
+       "updatedAt"              => Time.utc.to_unix,
+       "lastChannelRefreshedAt" => Invidious::Database::Statistics.channel_last_update.try &.to_unix || 0_i64,
+     }
++
++    # Reset playback requests tracker
++    STATISTICS["playback"] = {} of String => Int64 | Float64
+   end
+ end
+diff --git a/src/invidious/routes/api/v1/misc.cr b/src/invidious/routes/api/v1/misc.cr
+index e499f4d6d..16fc229dc 100644
+--- a/src/invidious/routes/api/v1/misc.cr
++++ b/src/invidious/routes/api/v1/misc.cr
+@@ -6,6 +6,22 @@ module Invidious::Routes::API::V1::Misc
+     if !CONFIG.statistics_enabled
+       return {"software" => SOFTWARE}.to_json
+     else
++      # Calculate playback success rate
++      if (tracker = Invidious::Jobs::StatisticsRefreshJob::STATISTICS["playback"]?)
++        tracker = tracker.as(Hash(String, Int64 | Float64))
++
++        if !tracker.empty?
++          total_requests = tracker["totalRequests"]
++          success_count = tracker["successfulRequests"]
++
++          if total_requests.zero?
++            tracker["ratio"] = 1_i64
++          else
++            tracker["ratio"] = (success_count / (total_requests)).round(2)
++          end
++        end
++      end
++
+       return Invidious::Jobs::StatisticsRefreshJob::STATISTICS.to_json
+     end
+   end
+diff --git a/src/invidious/routes/video_playback.cr b/src/invidious/routes/video_playback.cr
+index 9641e01a1..d1ac5d9ec 100644
+--- a/src/invidious/routes/video_playback.cr
++++ b/src/invidious/routes/video_playback.cr
+@@ -80,9 +80,14 @@ module Invidious::Routes::VideoPlayback
+     # Remove the Range header added previously.
+     headers.delete("Range") if range_header.nil?
+ 
++    playback_statistics = get_playback_statistic().as(Hash(String, Int64 | Float64))
++    playback_statistics["totalRequests"] += 1
++
+     if response.status_code >= 400
+       env.response.content_type = "text/plain"
+       haltf env, response.status_code
++    else
++      playback_statistics["successfulRequests"] += 1
+     end
+ 
+     if url.includes? "&file=seg.ts"
+
+From aa5f0a49f1f0786c833f3ca4fb4e5f86a15e9d0e Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 1 Sep 2023 12:14:05 -0700
+Subject: [PATCH 2/3] Count when YouTube returns wrong video as failure
+
+---
+ src/invidious/videos/parser.cr | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 06ff96b1f..67d745591 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -78,6 +78,11 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+     # YouTube may return a different video player response than expected.
+     # See: https://github.com/TeamNewPipe/NewPipe/issues/8713
+     # Line to be reverted if one day we solve the video not available issue.
++
++    # Although technically not a call to /videoplayback the fact that YouTube is returning the
++    # wrong video means that we should count it as a failure.
++    get_playback_statistic().as(Hash(String, Int64 | Float64))["totalRequests"] += 1
++
+     return {
+       "version" => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
+       "reason"  => JSON::Any.new("Can't load the video on this Invidious instance. YouTube is currently trying to block Invidious instances. <a href=\"https://github.com/iv-org/invidious/issues/3822\">Click here for more info about the issue.</a>"),
+
+From 971c3248487765807db3352655e0e0b65cd3c3c7 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 1 Sep 2023 12:15:44 -0700
+Subject: [PATCH 3/3] Cast playback stats hash type prior to return
+
+---
+ src/invidious/helpers/helpers.cr       | 2 +-
+ src/invidious/routes/video_playback.cr | 2 +-
+ src/invidious/videos/parser.cr         | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/invidious/helpers/helpers.cr b/src/invidious/helpers/helpers.cr
+index 38b96db75..6dc9860eb 100644
+--- a/src/invidious/helpers/helpers.cr
++++ b/src/invidious/helpers/helpers.cr
+@@ -223,5 +223,5 @@ def get_playback_statistic
+     Invidious::Jobs::StatisticsRefreshJob::STATISTICS["playback"] = tracker
+   end
+ 
+-  return tracker
++  return tracker.as(Hash(String, Int64 | Float64))
+ end
+diff --git a/src/invidious/routes/video_playback.cr b/src/invidious/routes/video_playback.cr
+index d1ac5d9ec..1d5aa9144 100644
+--- a/src/invidious/routes/video_playback.cr
++++ b/src/invidious/routes/video_playback.cr
+@@ -80,7 +80,7 @@ module Invidious::Routes::VideoPlayback
+     # Remove the Range header added previously.
+     headers.delete("Range") if range_header.nil?
+ 
+-    playback_statistics = get_playback_statistic().as(Hash(String, Int64 | Float64))
++    playback_statistics = get_playback_statistic()
+     playback_statistics["totalRequests"] += 1
+ 
+     if response.status_code >= 400
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 67d745591..14775b89f 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -81,7 +81,7 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+ 
+     # Although technically not a call to /videoplayback the fact that YouTube is returning the
+     # wrong video means that we should count it as a failure.
+-    get_playback_statistic().as(Hash(String, Int64 | Float64))["totalRequests"] += 1
++    get_playback_statistic()["totalRequests"] += 1
+ 
+     return {
+       "version" => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
