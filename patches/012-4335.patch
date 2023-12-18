@@ -1,0 +1,130 @@
+From 2fea6a849987568a5506a40b6fd6c7bf97fd8808 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 15 Dec 2023 11:52:48 -0800
+Subject: [PATCH 1/2] Add option to disable force_resolve in make_client
+
+Some websites such as archive.org and textcaptcha.com
+does not support IPv6 and as such requests fail when Invidious requests
+with IPv6 to those services.
+---
+ src/invidious/comments/reddit.cr            |  2 +-
+ src/invidious/helpers/utils.cr              |  2 +-
+ src/invidious/routes/api/v1/videos.cr       |  4 ++--
+ src/invidious/user/captcha.cr               |  2 +-
+ src/invidious/yt_backend/connection_pool.cr | 13 +++++++++----
+ 5 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/src/invidious/comments/reddit.cr b/src/invidious/comments/reddit.cr
+index ba9c19f13..feb9eb5ad 100644
+--- a/src/invidious/comments/reddit.cr
++++ b/src/invidious/comments/reddit.cr
+@@ -2,7 +2,7 @@ module Invidious::Comments
+   extend self
+ 
+   def fetch_reddit(id, sort_by = "confidence")
+-    client = make_client(REDDIT_URL)
++    client = make_client(REDDIT_URL, force_resolve: false)
+     headers = HTTP::Headers{"User-Agent" => "web:invidious:v#{CURRENT_VERSION} (by github.com/iv-org/invidious)"}
+ 
+     # TODO: Use something like #479 for a static list of instances to use here
+diff --git a/src/invidious/helpers/utils.cr b/src/invidious/helpers/utils.cr
+index a006d602e..8da1b79ad 100644
+--- a/src/invidious/helpers/utils.cr
++++ b/src/invidious/helpers/utils.cr
+@@ -302,7 +302,7 @@ def subscribe_pubsub(topic, key)
+     "hub.secret"        => key.to_s,
+   }
+ 
+-  return make_client(PUBSUB_URL, &.post("/subscribe", form: body))
++  return make_client(PUBSUB_URL, force_resolve: false, &.post("/subscribe", form: body))
+ end
+ 
+ def parse_range(range)
+diff --git a/src/invidious/routes/api/v1/videos.cr b/src/invidious/routes/api/v1/videos.cr
+index 1017ac9d7..683717394 100644
+--- a/src/invidious/routes/api/v1/videos.cr
++++ b/src/invidious/routes/api/v1/videos.cr
+@@ -256,13 +256,13 @@ module Invidious::Routes::API::V1::Videos
+ 
+         file = URI.encode_www_form("#{id[0, 3]}/#{id}.xml")
+ 
+-        location = make_client(ARCHIVE_URL, &.get("/download/youtubeannotations_#{index}/#{id[0, 2]}.tar/#{file}"))
++        location = make_client(ARCHIVE_URL, force_resolve: false, &.get("/download/youtubeannotations_#{index}/#{id[0, 2]}.tar/#{file}"))
+ 
+         if !location.headers["Location"]?
+           env.response.status_code = location.status_code
+         end
+ 
+-        response = make_client(URI.parse(location.headers["Location"]), &.get(location.headers["Location"]))
++        response = make_client(URI.parse(location.headers["Location"]), force_resolve: false, &.get(location.headers["Location"]))
+ 
+         if response.body.empty?
+           haltf env, 404
+diff --git a/src/invidious/user/captcha.cr b/src/invidious/user/captcha.cr
+index 8a0f67e56..46cf1711a 100644
+--- a/src/invidious/user/captcha.cr
++++ b/src/invidious/user/captcha.cr
+@@ -62,7 +62,7 @@ struct Invidious::User
+     end
+ 
+     def generate_text(key)
+-      response = make_client(TEXTCAPTCHA_URL, &.get("/github.com/iv.org/invidious.json").body)
++      response = make_client(TEXTCAPTCHA_URL, force_resolve: false, &.get("/github.com/iv.org/invidious.json").body)
+       response = JSON.parse(response)
+ 
+       tokens = response["a"].as_a.map do |answer|
+diff --git a/src/invidious/yt_backend/connection_pool.cr b/src/invidious/yt_backend/connection_pool.cr
+index 36e82766d..c5c44d2c0 100644
+--- a/src/invidious/yt_backend/connection_pool.cr
++++ b/src/invidious/yt_backend/connection_pool.cr
+@@ -59,9 +59,14 @@ struct YoutubeConnectionPool
+   end
+ end
+ 
+-def make_client(url : URI, region = nil)
++def make_client(url : URI, region = nil, force_resolve : Bool = true)
+   client = HTTPClient.new(url, OpenSSL::SSL::Context::Client.insecure)
+-  client.family = CONFIG.force_resolve
++
++  # Some services do not support IPv6.
++  if force_resolve
++    client.family = CONFIG.force_resolve
++  end
++
+   client.before_request { |r| add_yt_headers(r) } if url.host == "www.youtube.com"
+   client.read_timeout = 10.seconds
+   client.connect_timeout = 10.seconds
+@@ -80,8 +85,8 @@ def make_client(url : URI, region = nil)
+   return client
+ end
+ 
+-def make_client(url : URI, region = nil, &block)
+-  client = make_client(url, region)
++def make_client(url : URI, region = nil, force_resolve : Bool = true, &block)
++  client = make_client(url, region, force_resolve)
+   begin
+     yield client
+   ensure
+
+From 815a1c2cc44a70299f783886856083a7d58af281 Mon Sep 17 00:00:00 2001
+From: syeopite <syeopite@syeopite.dev>
+Date: Fri, 15 Dec 2023 12:11:39 -0800
+Subject: [PATCH 2/2] Reenable force_resolve on pubsub subcribe request
+
+---
+ src/invidious/helpers/utils.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/helpers/utils.cr b/src/invidious/helpers/utils.cr
+index 8da1b79ad..a006d602e 100644
+--- a/src/invidious/helpers/utils.cr
++++ b/src/invidious/helpers/utils.cr
+@@ -302,7 +302,7 @@ def subscribe_pubsub(topic, key)
+     "hub.secret"        => key.to_s,
+   }
+ 
+-  return make_client(PUBSUB_URL, force_resolve: false, &.post("/subscribe", form: body))
++  return make_client(PUBSUB_URL, &.post("/subscribe", form: body))
+ end
+ 
+ def parse_range(range)
