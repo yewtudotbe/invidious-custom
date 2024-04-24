@@ -1,0 +1,30 @@
+From d28bc49e1493a653eaa115a387d1fa19f8cdc256 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Wed, 24 Apr 2024 10:57:50 +0200
+Subject: [PATCH 1/1] switch to IOS
+
+---
+ src/invidious/videos/parser.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 75fe4a36..cdec3aec 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -107,11 +107,11 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+     # decrypted URLs and maybe fix throttling issues (#2194). See the
+     # following issue for an explanation about decrypted URLs:
+     # https://github.com/TeamNewPipe/NewPipeExtractor/issues/562
+-    client_config.client_type = YoutubeAPI::ClientType::Android
++    client_config.client_type = YoutubeAPI::ClientType::IOS
+     new_player_response = try_fetch_streaming_data(video_id, client_config)
+   elsif !reason.includes?("your country") # Handled separately
+     # The Android embedded client could help here
+-    client_config.client_type = YoutubeAPI::ClientType::AndroidScreenEmbed
++    client_config.client_type = YoutubeAPI::ClientType::IOSEmbedded
+     new_player_response = try_fetch_streaming_data(video_id, client_config)
+   end
+ 
+-- 
+2.44.0
+
