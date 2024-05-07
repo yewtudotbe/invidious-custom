@@ -54,6 +54,18 @@ index 3dbeaf37..d84d03d0 100644
 diff --git a/src/invidious/views/donate.ecr b/src/invidious/views/donate.ecr
 new file mode 100644
 index 00000000..0c7deecc
+--- a/src/invidious/views/template.ecr
++++ b/src/invidious/views/template.ecr
+@@ -147,7 +147,7 @@
+                     <div class="pure-u-1 pure-u-md-1-3">
+                         <span>
+                             <i class="icon ion-ios-wallet"></i>
+-                            <a href="https://invidious.io/donate/"><%= translate(locale, "footer_donate_page") %></a>
++                            <a href="https://yewtu.be/donate/"><%= translate(locale, "footer_donate_page") %></a>
+                         </span>
+                         <span><%= translate(locale, "Current version: ") %> <%= CURRENT_VERSION %>-<%= CURRENT_COMMIT %> @ <%= CURRENT_BRANCH %></span>
+                     </div>
+
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
 @@ -0,0 +1,34 @@
