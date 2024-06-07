@@ -1,4 +1,4 @@
-From 1e6a035109316050f8bb290cefd77556ad0ae196 Mon Sep 17 00:00:00 2001
+From 5a14304ed91543c51b0388d1620a085129044e0a Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Wed, 26 Jul 2023 15:43:43 +0200
 Subject: [PATCH] limit feeds and delete materialized views
@@ -6,7 +6,7 @@ Subject: [PATCH] limit feeds and delete materialized views
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
  config/sql/channel_videos.sql                |  8 +--
- kubernetes/values.yaml                       |  1 -
+ kubernetes/values.yaml                       | 60 ++++++++++++++++
  src/invidious.cr                             | 12 ----
  src/invidious/config.cr                      |  2 -
  src/invidious/jobs/refresh_feeds_job.cr      | 75 --------------------
@@ -14,8 +14,9 @@ Subject: [PATCH] limit feeds and delete materialized views
  src/invidious/routes/login.cr                |  3 -
  src/invidious/search/processors.cr           | 18 ++---
  src/invidious/users.cr                       | 39 +++++-----
- 10 files changed, 41 insertions(+), 125 deletions(-)
+ 10 files changed, 101 insertions(+), 124 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
+ create mode 100644 kubernetes/values.yaml
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
 diff --git a/config/migrate-scripts/migrate-db-8bc91ce.sh b/config/migrate-scripts/migrate-db-8bc91ce.sh
@@ -53,19 +54,73 @@ index cd4e0ffdb..f2ac4876c 100644
 +  (ucid COLLATE pg_catalog."default", published);
  
 diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
-index 5000c2b66..17d69b5d7 100644
---- a/kubernetes/values.yaml
+new file mode 100644
+index 000000000..17d69b5d7
+--- /dev/null
 +++ b/kubernetes/values.yaml
-@@ -49,7 +49,6 @@ postgresql:
- # Adapted from ../config/config.yml
- config:
-   channel_threads: 1
--  feed_threads: 1
-   db:
-     user: kemal
-     password: kemal
+@@ -0,0 +1,60 @@
++name: invidious
++
++image:
++  repository: quay.io/invidious/invidious
++  tag: latest
++  pullPolicy: Always
++
++replicaCount: 1
++
++autoscaling:
++  enabled: false
++  minReplicas: 1
++  maxReplicas: 16
++  targetCPUUtilizationPercentage: 50
++
++service:
++  type: ClusterIP
++  port: 3000
++  #loadBalancerIP:
++
++resources: {}
++  #requests:
++  #  cpu: 100m
++  #  memory: 64Mi
++  #limits:
++  #  cpu: 800m
++  #  memory: 512Mi
++
++securityContext:
++  allowPrivilegeEscalation: false
++  runAsUser: 1000
++  runAsGroup: 1000
++  fsGroup: 1000
++
++# See https://github.com/bitnami/charts/tree/master/bitnami/postgresql
++postgresql:
++  image:
++    tag: 13
++  auth:
++    username: kemal
++    password: kemal
++    database: invidious
++  primary:
++    initdb:
++      username: kemal
++      password: kemal
++      scriptsConfigMap: invidious-postgresql-init
++
++# Adapted from ../config/config.yml
++config:
++  channel_threads: 1
++  db:
++    user: kemal
++    password: kemal
++    host: invidious-postgresql
++    port: 5432
++    dbname: invidious
++  full_refresh: false
++  https_only: false
++  domain:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 84e1895da..ed84a3d14 100644
+index e0bd01015..011c427fb 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -103,14 +103,6 @@ Kemal.config.extra_options do |parser|
@@ -95,7 +150,7 @@ index 84e1895da..ed84a3d14 100644
  if CONFIG.decrypt_polling
    Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index e5f1e8222..6fd1c3e43 100644
+index 09c2168b8..4cabf192e 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -62,8 +62,6 @@ class Config
