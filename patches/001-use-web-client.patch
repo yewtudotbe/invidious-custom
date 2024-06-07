@@ -1,31 +1,33 @@
-From 50570aa603cfa90b7ec92009b80d10317e450346 Mon Sep 17 00:00:00 2001
+From b57901b75714a83467dc1a85e423eacda0c1a8cd Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
  <4016501+unixfox@users.noreply.github.com>
-Date: Fri, 26 Apr 2024 08:29:23 +0000
-Subject: [PATCH 1/1] switch to WEB clien
+Date: Fri, 7 Jun 2024 16:35:21 +0000
+Subject: [PATCH 1/1] switch to WEB client
 
 ---
- src/invidious/videos/parser.cr | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ src/invidious/videos/parser.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
-index 75fe4a36..f8da7e1c 100644
+index 0e1a947c..2f856b16 100644
 --- a/src/invidious/videos/parser.cr
 +++ b/src/invidious/videos/parser.cr
-@@ -107,11 +107,11 @@ def extract_video_info(video_id : String, proxy_region : String? = nil)
+@@ -107,13 +107,13 @@ def extract_video_info(video_id : String)
      # decrypted URLs and maybe fix throttling issues (#2194). See the
      # following issue for an explanation about decrypted URLs:
      # https://github.com/TeamNewPipe/NewPipeExtractor/issues/562
--    client_config.client_type = YoutubeAPI::ClientType::Android
+-    client_config.client_type = YoutubeAPI::ClientType::AndroidTestSuite
 +    client_config.client_type = YoutubeAPI::ClientType::Web
      new_player_response = try_fetch_streaming_data(video_id, client_config)
-   elsif !reason.includes?("your country") # Handled separately
-     # The Android embedded client could help here
--    client_config.client_type = YoutubeAPI::ClientType::AndroidScreenEmbed
+   end
+ 
+   # Last hope
+   if new_player_response.nil?
+-    client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
 +    client_config.client_type = YoutubeAPI::ClientType::WebEmbeddedPlayer
      new_player_response = try_fetch_streaming_data(video_id, client_config)
    end
-
+ 
 -- 
-2.44.0
+2.45.1
 
