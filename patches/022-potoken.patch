@@ -1,17 +1,25 @@
-From 1b6fe96590ad924b6db41656943ac5f636788d6a Mon Sep 17 00:00:00 2001
+From d912d31ee75ae0c53e626137106884e03816c8c4 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Fri, 21 Jun 2024 23:17:22 +0200
 Subject: [PATCH 1/1] retreive potoken for bypass restrictions
 
 ---
- src/invidious/yt_backend/youtube_api.cr | 3 +++
- 1 file changed, 3 insertions(+)
+ src/invidious/yt_backend/youtube_api.cr | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 727ce9a3..1fb9737e 100644
+index 727ce9a3..403465cf 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -488,6 +488,9 @@ module YoutubeAPI
+@@ -303,6 +303,7 @@ module YoutubeAPI
+         "gl"            => client_config.region || "US", # Can't be empty!
+         "clientName"    => client_config.name,
+         "clientVersion" => client_config.version,
++        "visitorData"   => REDIS_DB.get("VISITORDATA"),
+       } of String => String | Int64,
+     }
+ 
+@@ -488,6 +489,9 @@ module YoutubeAPI
            "html5Preference": "HTML5_PREF_WANTS",
          },
        },
