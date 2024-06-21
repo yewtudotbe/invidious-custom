@@ -1,34 +1,41 @@
-From d912d31ee75ae0c53e626137106884e03816c8c4 Mon Sep 17 00:00:00 2001
+From e6aa46551f363efef637e39550d85e54e612e12f Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Fri, 21 Jun 2024 23:17:22 +0200
 Subject: [PATCH 1/1] retreive potoken for bypass restrictions
 
 ---
- src/invidious/yt_backend/youtube_api.cr | 4 ++++
- 1 file changed, 4 insertions(+)
+ src/invidious/yt_backend/youtube_api.cr | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 727ce9a3..403465cf 100644
+index 727ce9a3..3eea424b 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -303,6 +303,7 @@ module YoutubeAPI
-         "gl"            => client_config.region || "US", # Can't be empty!
-         "clientName"    => client_config.name,
-         "clientVersion" => client_config.version,
-+        "visitorData"   => REDIS_DB.get("VISITORDATA"),
+@@ -306,6 +306,12 @@ module YoutubeAPI
        } of String => String | Int64,
      }
  
-@@ -488,6 +489,9 @@ module YoutubeAPI
-           "html5Preference": "HTML5_PREF_WANTS",
-         },
++    visitor_data = REDIS_DB.get("VISITORDATA")
++
++    if visitor_data
++      client_context["client"]["visitorData"] = visitor_data
++    end
++
+     # Add some more context if it exists in the client definitions
+     if !client_config.screen.empty?
+       client_context["client"]["clientScreen"] = client_config.screen
+@@ -490,6 +496,11 @@ module YoutubeAPI
        },
-+      "serviceIntegrityDimensions" => {
-+        "poToken": REDIS_DB.get("POTOKEN"),
-+      },
      }
  
++    po_token = REDIS_DB.get("POTOKEN")
++    if po_token
++      data["serviceIntegrityDimensions"]["poToken"] = po_token
++    end
++
      # Append the additional parameters if those were provided
+     if params != ""
+       data["params"] = params
 -- 
 2.45.2
 
