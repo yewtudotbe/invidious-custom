@@ -1,7 +1,7 @@
-From a15bc4a3a3863450d1b2aad0db60179fec03680e Mon Sep 17 00:00:00 2001
+From 53223f99b03ac1a51cb35f7c33d4939083dc6f1a Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
-Date: Wed, 24 Jul 2024 19:25:42 +0200
-Subject: [PATCH 1/1] Add ability to set po_token and visitordata ID
+Date: Wed, 24 Jul 2024 19:28:47 +0200
+Subject: [PATCH] Add ability to set po_token and visitordata ID
 
 ---
  config/config.example.yml               | 12 ++++++++++++
@@ -11,7 +11,7 @@ Subject: [PATCH 1/1] Add ability to set po_token and visitordata ID
  4 files changed, 36 insertions(+), 3 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index 38085a20..f666405e 100644
+index 38085a20b..f666405e3 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -173,6 +173,18 @@ https_only: false
@@ -34,7 +34,7 @@ index 38085a20..f666405e 100644
  # -----------------------------
  #  Logging
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 09c2168b..5340d4f5 100644
+index 09c2168b8..5340d4f5a 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -130,6 +130,11 @@ class Config
@@ -50,7 +50,7 @@ index 09c2168b..5340d4f5 100644
    @[YAML::Field(converter: Preferences::StringToCookies)]
    property cookies : HTTP::Cookies = HTTP::Cookies.new
 diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
-index 0e1a947c..506e9e1e 100644
+index 4bdb25122..95fa3d799 100644
 --- a/src/invidious/videos/parser.cr
 +++ b/src/invidious/videos/parser.cr
 @@ -55,7 +55,7 @@ def extract_video_info(video_id : String)
@@ -86,10 +86,10 @@ index 0e1a947c..506e9e1e 100644
      new_player_response = try_fetch_streaming_data(video_id, client_config)
    end
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 727ce9a3..2d3b77d2 100644
+index c8b037c8c..0efbe949b 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -341,6 +341,10 @@ module YoutubeAPI
+@@ -320,6 +320,10 @@ module YoutubeAPI
        client_context["client"]["platform"] = platform
      end
  
@@ -100,7 +100,7 @@ index 727ce9a3..2d3b77d2 100644
      return client_context
    end
  
-@@ -488,6 +492,9 @@ module YoutubeAPI
+@@ -467,6 +471,9 @@ module YoutubeAPI
            "html5Preference": "HTML5_PREF_WANTS",
          },
        },
@@ -110,7 +110,7 @@ index 727ce9a3..2d3b77d2 100644
      }
  
      # Append the additional parameters if those were provided
-@@ -620,6 +627,10 @@ module YoutubeAPI
+@@ -599,6 +606,10 @@ module YoutubeAPI
        headers["User-Agent"] = user_agent
      end
  
@@ -121,6 +121,3 @@ index 727ce9a3..2d3b77d2 100644
      # Logging
      LOGGER.debug("YoutubeAPI: Using endpoint: \"#{endpoint}\"")
      LOGGER.trace("YoutubeAPI: ClientConfig: #{client_config}")
--- 
-2.45.2
-
