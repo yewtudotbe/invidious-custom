@@ -1,4 +1,4 @@
-From 5a14304ed91543c51b0388d1620a085129044e0a Mon Sep 17 00:00:00 2001
+From e476dbe25baddcbfd5ee61d27c706e16e7771f68 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Wed, 26 Jul 2023 15:43:43 +0200
 Subject: [PATCH] limit feeds and delete materialized views
@@ -120,7 +120,7 @@ index 000000000..17d69b5d7
 +  https_only: false
 +  domain:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index e0bd01015..011c427fb 100644
+index 3804197e3..961ae8721 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -103,14 +103,6 @@ Kemal.config.extra_options do |parser|
@@ -138,7 +138,7 @@ index e0bd01015..011c427fb 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -159,10 +151,6 @@ if CONFIG.channel_threads > 0
+@@ -168,10 +160,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -146,11 +146,11 @@ index e0bd01015..011c427fb 100644
 -  Invidious::Jobs.register Invidious::Jobs::RefreshFeedsJob.new(PG_DB)
 -end
 -
- DECRYPT_FUNCTION = DecryptFunction.new(CONFIG.decrypt_polling)
- if CONFIG.decrypt_polling
-   Invidious::Jobs.register Invidious::Jobs::UpdateDecryptFunctionJob.new
+ if CONFIG.statistics_enabled
+   Invidious::Jobs.register Invidious::Jobs::StatisticsRefreshJob.new(PG_DB, SOFTWARE)
+ end
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 09c2168b8..4cabf192e 100644
+index c4ddcdb36..2e6df47a1 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -62,8 +62,6 @@ class Config
@@ -244,7 +244,7 @@ index 4f8130dfd..000000000
 -  end
 -end
 diff --git a/src/invidious/routes/account.cr b/src/invidious/routes/account.cr
-index 9d930841a..5b55738e5 100644
+index dd65e7a60..8086a54e5 100644
 --- a/src/invidious/routes/account.cr
 +++ b/src/invidious/routes/account.cr
 @@ -123,10 +123,8 @@ module Invidious::Routes::Account
