@@ -1,0 +1,116 @@
+From 4f680f9a4f53ad07c6993d5ea82d14d53a1038a9 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Thu, 19 Sep 2024 23:24:15 +0200
+Subject: [PATCH] use WEB_CREATOR when po_token with WEB_EMBEDDED_PLAYER as a
+ fallback
+
+---
+ src/invidious/videos/parser.cr          | 26 ++++++++++++++++++-------
+ src/invidious/yt_backend/youtube_api.cr | 12 +++++++++++-
+ 2 files changed, 30 insertions(+), 8 deletions(-)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 95fa3d799..ea75a2279 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -53,6 +53,10 @@ end
+ def extract_video_info(video_id : String)
+   # Init client config for the API
+   client_config = YoutubeAPI::ClientConfig.new
++  # Use the WEB_CREATOR when po_token is configured because it fully only works on this client
++  if CONFIG.po_token
++    client_config.client_type = YoutubeAPI::ClientType::WebCreator
++  end
+ 
+   # Fetch data from the player endpoint
+   player_response = YoutubeAPI.player(video_id: video_id, params: "2AMB", client_config: client_config)
+@@ -102,6 +106,14 @@ def extract_video_info(video_id : String)
+ 
+   new_player_response = nil
+ 
++  # Second try in case WEB_EMBEDDED_PLAYER doesn't work with po_token.
++  # Only trigger if reason found and po_token configured.
++  # TvHtml5ScreenEmbed now requires sig helper for it to work but doesn't work with po_token.
++  if reason && CONFIG.po_token
++    client_config.client_type = YoutubeAPI::ClientType::WebEmbeddedPlayer
++    new_player_response = try_fetch_streaming_data(video_id, client_config)
++  end
++
+   # Don't use Android client if po_token is passed because po_token doesn't
+   # work for Android client.
+   if reason.nil? && CONFIG.po_token.nil?
+@@ -114,10 +126,9 @@ def extract_video_info(video_id : String)
+   end
+ 
+   # Last hope
+-  # Only trigger if reason found and po_token or didn't work wth Android client.
+-  # TvHtml5ScreenEmbed now requires sig helper for it to work but po_token is not required
+-  # if the IP address is not blocked.
+-  if CONFIG.po_token && reason || CONFIG.po_token.nil? && new_player_response.nil?
++  # Only trigger if reason found or didn't work wth Android client.
++  # TvHtml5ScreenEmbed now requires sig helper for it to work but doesn't work with po_token.
++  if reason && CONFIG.po_token.nil?
+     client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
+     new_player_response = try_fetch_streaming_data(video_id, client_config)
+   end
+@@ -185,10 +196,11 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   end
+ 
+   video_details = player_response.dig?("videoDetails")
+-  microformat = player_response.dig?("microformat", "playerMicroformatRenderer")
++  if !(microformat = player_response.dig?("microformat", "playerMicroformatRenderer"))
++    microformat = {} of String => JSON::Any
++  end
+ 
+   raise BrokenTubeException.new("videoDetails") if !video_details
+-  raise BrokenTubeException.new("microformat") if !microformat
+ 
+   # Basic video infos
+ 
+@@ -225,7 +237,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     .try &.as_a.map &.as_s || [] of String
+ 
+   allow_ratings = video_details["allowRatings"]?.try &.as_bool
+-  family_friendly = microformat["isFamilySafe"].try &.as_bool
++  family_friendly = microformat["isFamilySafe"]?.try &.as_bool
+   is_listed = video_details["isCrawlable"]?.try &.as_bool
+   is_upcoming = video_details["isUpcoming"]?.try &.as_bool
+ 
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index d66bf7aa2..99ec6e63a 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -29,6 +29,7 @@ module YoutubeAPI
+     WebEmbeddedPlayer
+     WebMobile
+     WebScreenEmbed
++    WebCreator
+ 
+     Android
+     AndroidEmbeddedPlayer
+@@ -80,6 +81,14 @@ module YoutubeAPI
+       os_version: WINDOWS_VERSION,
+       platform:   "DESKTOP",
+     },
++    ClientType::WebCreator => {
++      name:       "WEB_CREATOR",
++      name_proto: "62",
++      version:    "1.20220918",
++      os_name:    "Windows",
++      os_version: WINDOWS_VERSION,
++      platform:   "DESKTOP",
++    },
+ 
+     # Android
+ 
+@@ -291,8 +300,9 @@ module YoutubeAPI
+     end
+ 
+     if client_config.screen == "EMBED"
++      # embedUrl https://www.google.com allow loading almost all video that are configured not embeddable
+       client_context["thirdParty"] = {
+-        "embedUrl" => "https://www.youtube.com/embed/#{video_id}",
++        "embedUrl" => "https://www.google.com/",
+       } of String => String | Int64
+     end
+ 

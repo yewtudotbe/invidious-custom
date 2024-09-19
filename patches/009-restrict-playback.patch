@@ -1,4 +1,4 @@
-From 91908d4b3ff25cca88d56f21f6e5efdd3d83282e Mon Sep 17 00:00:00 2001
+From e2f4770db8669a7ebf7165e0ca3a0054578bdca5 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <contact@emiliendevos.be>
 Date: Sat, 8 Oct 2022 13:34:52 +0200
 Subject: [PATCH 1/1] enforce playback from main website
@@ -33,10 +33,10 @@ index 35ffa96e..412a9f7b 100644
          '&continuation=' + continuation;
  
 diff --git a/assets/js/player.js b/assets/js/player.js
-index bb53ac24..43bd902f 100644
+index d32062c6..6e9eabcb 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
-@@ -372,7 +372,7 @@ if (!video_data.params.listen && video_data.params.quality === 'dash') {
+@@ -423,7 +423,7 @@ if (!video_data.params.listen && video_data.params.quality === 'dash') {
  }
  
  player.vttThumbnails({
@@ -45,7 +45,7 @@ index bb53ac24..43bd902f 100644
      showTimestamp: true
  });
  
-@@ -398,7 +398,7 @@ if (!video_data.params.listen && video_data.params.annotations) {
+@@ -449,7 +449,7 @@ if (!video_data.params.listen && video_data.params.annotations) {
              }
          });
  
@@ -67,10 +67,10 @@ index 26ad138f..0242f31b 100644
  
      var onNon200 = function (xhr) { comments.innerHTML = fallback; };
 diff --git a/src/invidious/routes/api/v1/videos.cr b/src/invidious/routes/api/v1/videos.cr
-index 449c9f9b..82fc9b0f 100644
+index 368304ac..76a1d8f3 100644
 --- a/src/invidious/routes/api/v1/videos.cr
 +++ b/src/invidious/routes/api/v1/videos.cr
-@@ -27,6 +27,10 @@ module Invidious::Routes::API::V1::Videos
+@@ -29,6 +29,10 @@ module Invidious::Routes::API::V1::Videos
      id = env.params.url["id"]
      region = env.params.query["region"]? || env.params.body["region"]?
  
@@ -81,7 +81,7 @@ index 449c9f9b..82fc9b0f 100644
      if id.nil? || id.size != 11 || !id.matches?(/^[\w-]+$/)
        return error_json(400, "Invalid video ID")
      end
-@@ -170,6 +174,10 @@ module Invidious::Routes::API::V1::Videos
+@@ -181,6 +185,10 @@ module Invidious::Routes::API::V1::Videos
      id = env.params.url["id"]
      region = env.params.query["region"]?
  
@@ -92,7 +92,7 @@ index 449c9f9b..82fc9b0f 100644
      begin
        video = get_video(id, region: region)
      rescue ex : NotFoundException
-@@ -234,6 +242,10 @@ module Invidious::Routes::API::V1::Videos
+@@ -257,6 +265,10 @@ module Invidious::Routes::API::V1::Videos
      source = env.params.query["source"]?
      source ||= "archive"
  
@@ -103,7 +103,7 @@ index 449c9f9b..82fc9b0f 100644
      if !id.match(/[a-zA-Z0-9_-]{11}/)
        haltf env, 400
      end
-@@ -303,6 +315,10 @@ module Invidious::Routes::API::V1::Videos
+@@ -326,6 +338,10 @@ module Invidious::Routes::API::V1::Videos
  
      id = env.params.url["id"]
  
@@ -171,17 +171,17 @@ index c3c02df0..d046c791 100644
      <% end %>
  </video>
 diff --git a/src/invidious/views/watch.ecr b/src/invidious/views/watch.ecr
-index 62a154a4..cf6d8981 100644
+index 45c58a16..bc922cda 100644
 --- a/src/invidious/views/watch.ecr
 +++ b/src/invidious/views/watch.ecr
 @@ -64,6 +64,7 @@ we're going to need to do it here in order to allow for translations.
      "premiere_timestamp" => video.premiere_timestamp.try &.to_unix,
-     "vr" => video.is_vr,
+     "vr" => video.vr?,
      "projection_type" => video.projection_type,
 +    "hmac_key" => OpenSSL::HMAC.hexdigest(:sha1, HMAC_KEY, video.id),
      "local_disabled" => CONFIG.disabled?("local"),
      "support_reddit" => true
  }.to_pretty_json
 -- 
-2.42.0
+2.46.1
 
