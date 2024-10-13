@@ -1,0 +1,716 @@
+From 2a40f3b9c53f7eaf510028613135d94cbfb7ba68 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Sun, 13 Oct 2024 19:21:50 +0200
+Subject: [PATCH 1/3] trying to only use next endpoint for the major data
+
+---
+ locales/en-US.json                        |   5 +-
+ src/invidious/helpers/errors.cr           |  13 +--
+ src/invidious/routes/watch.cr             | 114 +++++++++++-----------
+ src/invidious/videos.cr                   |  18 ++--
+ src/invidious/videos/parser.cr            |  63 +++++++-----
+ src/invidious/views/components/player.ecr |   2 +
+ src/invidious/views/embed.ecr             |  10 +-
+ src/invidious/views/error.ecr             |   1 -
+ src/invidious/views/watch.ecr             |  19 +++-
+ 9 files changed, 146 insertions(+), 99 deletions(-)
+
+diff --git a/locales/en-US.json b/locales/en-US.json
+index 7827d9c63..caafbc86d 100644
+--- a/locales/en-US.json
++++ b/locales/en-US.json
+@@ -497,5 +497,8 @@
+     "toggle_theme": "Toggle Theme",
+     "carousel_slide": "Slide {{current}} of {{total}}",
+     "carousel_skip": "Skip the Carousel",
+-    "carousel_go_to": "Go to slide `x`"
++    "carousel_go_to": "Go to slide `x`",
++    "error_from_youtube_unplayable": "Video unplayable due to an error from YouTube:",
++    "error_processing_data_youtube": "Error while processing the data sent by YouTube",
++    "refresh_page": "Refresh the page"
+ }
+diff --git a/src/invidious/helpers/errors.cr b/src/invidious/helpers/errors.cr
+index b7643194d..b3cb5b943 100644
+--- a/src/invidious/helpers/errors.cr
++++ b/src/invidious/helpers/errors.cr
+@@ -73,10 +73,6 @@ def error_template_helper(env : HTTP::Server::Context, status_code : Int32, exce
+     </div>
+   END_HTML
+ 
+-  # Don't show the usual "next steps" widget. The same options are
+-  # proposed above the error message, just worded differently.
+-  next_steps = ""
+-
+   return templated "error"
+ end
+ 
+@@ -86,8 +82,13 @@ def error_template_helper(env : HTTP::Server::Context, status_code : Int32, mess
+ 
+   locale = env.get("preferences").as(Preferences).locale
+ 
+-  error_message = translate(locale, message)
+-  next_steps = error_redirect_helper(env)
++  error_message = <<-END_HTML
++    <div class="error_message">
++      <h2>#{translate(locale, "error_processing_data_youtube")}</h2>
++      <p>#{translate(locale, message)}</p>
++      #{error_redirect_helper(env)}
++    </div>
++  END_HTML
+ 
+   return templated "error"
+ end
+diff --git a/src/invidious/routes/watch.cr b/src/invidious/routes/watch.cr
+index aabe8dfc2..e7c451bc8 100644
+--- a/src/invidious/routes/watch.cr
++++ b/src/invidious/routes/watch.cr
+@@ -117,79 +117,83 @@ module Invidious::Routes::Watch
+       comment_html ||= ""
+     end
+ 
+-    fmt_stream = video.fmt_stream
+-    adaptive_fmts = video.adaptive_fmts
++    if video.reason.nil?
++      fmt_stream = video.fmt_stream
++      adaptive_fmts = video.adaptive_fmts
+ 
+-    if params.local
+-      fmt_stream.each { |fmt| fmt["url"] = JSON::Any.new(URI.parse(fmt["url"].as_s).request_target) }
+-      adaptive_fmts.each { |fmt| fmt["url"] = JSON::Any.new(URI.parse(fmt["url"].as_s).request_target) }
+-    end
++      if params.local
++        fmt_stream.each { |fmt| fmt["url"] = JSON::Any.new(URI.parse(fmt["url"].as_s).request_target) }
++        adaptive_fmts.each { |fmt| fmt["url"] = JSON::Any.new(URI.parse(fmt["url"].as_s).request_target) }
++      end
+ 
+-    video_streams = video.video_streams
+-    audio_streams = video.audio_streams
+-
+-    # Older videos may not have audio sources available.
+-    # We redirect here so they're not unplayable
+-    if audio_streams.empty? && !video.live_now
+-      if params.quality == "dash"
+-        env.params.query.delete_all("quality")
+-        env.params.query["quality"] = "medium"
+-        return env.redirect "/watch?#{env.params.query}"
+-      elsif params.listen
+-        env.params.query.delete_all("listen")
+-        env.params.query["listen"] = "0"
+-        return env.redirect "/watch?#{env.params.query}"
++      video_streams = video.video_streams
++      audio_streams = video.audio_streams
++
++      # Older videos may not have audio sources available.
++      # We redirect here so they're not unplayable
++      if audio_streams.empty? && !video.live_now
++        if params.quality == "dash"
++          env.params.query.delete_all("quality")
++          env.params.query["quality"] = "medium"
++          return env.redirect "/watch?#{env.params.query}"
++        elsif params.listen
++          env.params.query.delete_all("listen")
++          env.params.query["listen"] = "0"
++          return env.redirect "/watch?#{env.params.query}"
++        end
+       end
+-    end
+ 
+-    captions = video.captions
++      captions = video.captions
+ 
+-    preferred_captions = captions.select { |caption|
+-      params.preferred_captions.includes?(caption.name) ||
+-        params.preferred_captions.includes?(caption.language_code.split("-")[0])
+-    }
+-    preferred_captions.sort_by! { |caption|
+-      (params.preferred_captions.index(caption.name) ||
+-        params.preferred_captions.index(caption.language_code.split("-")[0])).not_nil!
+-    }
+-    captions = captions - preferred_captions
++      preferred_captions = captions.select { |caption|
++        params.preferred_captions.includes?(caption.name) ||
++          params.preferred_captions.includes?(caption.language_code.split("-")[0])
++      }
++      preferred_captions.sort_by! { |caption|
++        (params.preferred_captions.index(caption.name) ||
++          params.preferred_captions.index(caption.language_code.split("-")[0])).not_nil!
++      }
++      captions = captions - preferred_captions
+ 
+-    aspect_ratio = "16:9"
++      aspect_ratio = "16:9"
+ 
+-    thumbnail = "/vi/#{video.id}/maxres.jpg"
++      thumbnail = "/vi/#{video.id}/maxres.jpg"
+ 
+-    if params.raw
+-      if params.listen
+-        url = audio_streams[0]["url"].as_s
++      if params.raw
++        if params.listen
++          url = audio_streams[0]["url"].as_s
+ 
+-        if params.quality.ends_with? "k"
+-          audio_streams.each do |fmt|
+-            if fmt["bitrate"].as_i == params.quality.rchop("k").to_i
+-              url = fmt["url"].as_s
++          if params.quality.ends_with? "k"
++            audio_streams.each do |fmt|
++              if fmt["bitrate"].as_i == params.quality.rchop("k").to_i
++                url = fmt["url"].as_s
++              end
+             end
+           end
+-        end
+-      else
+-        url = fmt_stream[0]["url"].as_s
++        else
++          url = fmt_stream[0]["url"].as_s
+ 
+-        fmt_stream.each do |fmt|
+-          if fmt["quality"].as_s == params.quality
+-            url = fmt["url"].as_s
++          fmt_stream.each do |fmt|
++            if fmt["quality"].as_s == params.quality
++              url = fmt["url"].as_s
++            end
+           end
+         end
++
++        return env.redirect url
+       end
+ 
+-      return env.redirect url
++      # Structure used for the download widget
++      video_assets = Invidious::Frontend::WatchPage::VideoAssets.new(
++        full_videos: fmt_stream,
++        video_streams: video_streams,
++        audio_streams: audio_streams,
++        captions: video.captions
++      )
++    else
++      env.response.status_code = 500
+     end
+ 
+-    # Structure used for the download widget
+-    video_assets = Invidious::Frontend::WatchPage::VideoAssets.new(
+-      full_videos: fmt_stream,
+-      video_streams: video_streams,
+-      audio_streams: audio_streams,
+-      captions: video.captions
+-    )
+-
+     templated "watch"
+   end
+ 
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index ae09e736e..16ccf1979 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -313,7 +313,7 @@ def get_video(id, refresh = true, region = nil, force_refresh = false)
+     end
+   else
+     video = fetch_video(id, region)
+-    Invidious::Database::Videos.insert(video) if !region
++    Invidious::Database::Videos.insert(video) if !region && !video.info.dig?("reason")
+   end
+ 
+   return video
+@@ -326,13 +326,17 @@ end
+ def fetch_video(id, region)
+   info = extract_video_info(video_id: id)
+ 
+-  if reason = info["reason"]?
++  if info["reason"]?
++    reason = info["reason"].as_s
++    if info.dig?("subreason")
++      subreason = info["subreason"].as_s
++    else
++      subreason = "No additional reason"
++    end
+     if reason == "Video unavailable"
+-      raise NotFoundException.new(reason.as_s || "")
+-    elsif !reason.as_s.starts_with? "Premieres"
+-      # dont error when it's a premiere.
+-      # we already parsed most of the data and display the premiere date
+-      raise InfoException.new(reason.as_s || "")
++      raise NotFoundException.new(reason + ": " + subreason || "")
++    elsif {"Private video"}.any?(reason)
++      raise InfoException.new(reason + ": " + subreason || "")
+     end
+   end
+ 
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index fb8935d98..84e468b5e 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -64,18 +64,19 @@ def extract_video_info(video_id : String)
+   playability_status = player_response.dig?("playabilityStatus", "status").try &.as_s
+ 
+   if playability_status != "OK"
+-    subreason = player_response.dig?("playabilityStatus", "errorScreen", "playerErrorMessageRenderer", "subreason")
+-    reason = subreason.try &.[]?("simpleText").try &.as_s
+-    reason ||= subreason.try &.[]("runs").as_a.map(&.[]("text")).join("")
+-    reason ||= player_response.dig("playabilityStatus", "reason").as_s
++    reason = player_response.dig?("playabilityStatus", "reason").try &.as_s
++    reason ||= player_response.dig("playabilityStatus", "errorScreen", "playerErrorMessageRenderer", "reason", "simpleText").as_s
++    subreason_main = player_response.dig?("playabilityStatus", "errorScreen", "playerErrorMessageRenderer", "subreason")
++    subreason = subreason_main.try &.[]?("simpleText").try &.as_s
++    subreason ||= subreason_main.try &.[]("runs").as_a.map(&.[]("text")).join("")
+ 
+     # Stop here if video is not a scheduled livestream or
+     # for LOGIN_REQUIRED when videoDetails element is not found because retrying won't help
+-    if !{"LIVE_STREAM_OFFLINE", "LOGIN_REQUIRED"}.any?(playability_status) ||
+-       playability_status == "LOGIN_REQUIRED" && !player_response.dig?("videoDetails")
++    if {"Private video", "Video unavailable"}.any?(reason)
+       return {
+-        "version" => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
+-        "reason"  => JSON::Any.new(reason),
++        "version"   => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
++        "reason"    => JSON::Any.new(reason),
++        "subreason" => JSON::Any.new(subreason),
+       }
+     end
+   elsif video_id != player_response.dig("videoDetails", "videoId")
+@@ -95,11 +96,8 @@ def extract_video_info(video_id : String)
+     reason = nil
+   end
+ 
+-  # Don't fetch the next endpoint if the video is unavailable.
+-  if {"OK", "LIVE_STREAM_OFFLINE", "LOGIN_REQUIRED"}.any?(playability_status)
+-    next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
+-    player_response = player_response.merge(next_response)
+-  end
++  next_response = YoutubeAPI.next({"videoId": video_id, "params": ""})
++  player_response = player_response.merge(next_response)
+ 
+   params = parse_video_info(video_id, player_response)
+   params["reason"] = JSON::Any.new(reason) if reason
+@@ -205,17 +203,22 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     raise BrokenTubeException.new("videoSecondaryInfoRenderer") if !video_secondary_renderer
+   end
+ 
+-  video_details = player_response.dig?("videoDetails")
++  if !(video_details = player_response.dig?("videoDetails"))
++    video_details = {} of String => JSON::Any
++  end
+   if !(microformat = player_response.dig?("microformat", "playerMicroformatRenderer"))
+     microformat = {} of String => JSON::Any
+   end
+ 
+-  raise BrokenTubeException.new("videoDetails") if !video_details
+-
+   # Basic video infos
+ 
+   title = video_details["title"]?.try &.as_s
+ 
++  title ||= extract_text(
++    video_primary_renderer
++      .try &.dig?("title")
++  )
++
+   # We have to try to extract viewCount from videoPrimaryInfoRenderer first,
+   # then from videoDetails, as the latter is "0" for livestreams (we want
+   # to get the amount of viewers watching).
+@@ -226,17 +229,27 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   views_txt ||= video_details["viewCount"]?.try &.as_s || ""
+   views = views_txt.gsub(/\D/, "").to_i64?
+ 
+-  length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"])
++  length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"]?)
+     .try &.as_s.to_i64
+ 
+-  published = microformat["publishDate"]?
+-    .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) } || Time.utc
++  published_txt = video_primary_renderer
++    .try &.dig?("dateText", "simpleText")
++
++  if published_txt.try &.as_s.includes?("ago") && !published_txt.nil?
++    published = decode_date(published_txt.as_s.lchop("Started streaming "))
++  elsif published_txt && published_txt.try &.as_s.matches?(/(\w{3} \d{1,2}, \d{4})$/)
++    published = Time.parse(published_txt.as_s.match!(/(\w{3} \d{1,2}, \d{4})$/)[0], "%b %-d, %Y", Time::Location::UTC)
++  else
++    published = Time.utc
++  end
+ 
+   premiere_timestamp = microformat.dig?("liveBroadcastDetails", "startTimestamp")
+     .try { |t| Time.parse_rfc3339(t.as_s) }
+ 
+   live_now = microformat.dig?("liveBroadcastDetails", "isLiveNow")
+-    .try &.as_bool || false
++    .try &.as_bool
++  live_now ||= video_primary_renderer
++    .try &.dig?("viewCount", "videoViewCountRenderer", "isLive").try &.as_bool || false
+ 
+   post_live_dvr = video_details.dig?("isPostLiveDvr")
+     .try &.as_bool || false
+@@ -404,9 +417,6 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   # Author infos
+ 
+-  author = video_details["author"]?.try &.as_s
+-  ucid = video_details["channelId"]?.try &.as_s
+-
+   if author_info = video_secondary_renderer.try &.dig?("owner", "videoOwnerRenderer")
+     author_thumbnail = author_info.dig?("thumbnail", "thumbnails", 0, "url")
+     author_verified = has_verified_badge?(author_info["badges"]?)
+@@ -414,6 +424,9 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     subs_text = author_info["subscriberCountText"]?
+       .try { |t| t["simpleText"]? || t.dig?("runs", 0, "text") }
+       .try &.as_s.split(" ", 2)[0]
++
++    author = author_info.dig?("title", "runs", 0, "text").try &.as_s
++    ucid = author_info.dig?("title", "runs", 0, "navigationEndpoint", "browseEndpoint", "browseId").try &.as_s
+   end
+ 
+   # Return data
+@@ -438,7 +451,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     # Extra video infos
+     "allowedRegions"   => JSON::Any.new(allowed_regions.map { |v| JSON::Any.new(v) }),
+     "allowRatings"     => JSON::Any.new(allow_ratings || false),
+-    "isFamilyFriendly" => JSON::Any.new(family_friendly || false),
++    "isFamilyFriendly" => JSON::Any.new(family_friendly || true),
+     "isListed"         => JSON::Any.new(is_listed || false),
+     "isUpcoming"       => JSON::Any.new(is_upcoming || false),
+     "keywords"         => JSON::Any.new(keywords.map { |v| JSON::Any.new(v) }),
+@@ -448,7 +461,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     # Description
+     "description"      => JSON::Any.new(description || ""),
+     "descriptionHtml"  => JSON::Any.new(description_html || "<p></p>"),
+-    "shortDescription" => JSON::Any.new(short_description.try &.as_s || nil),
++    "shortDescription" => JSON::Any.new(short_description.try &.as_s || ""),
+     # Video metadata
+     "genre"     => JSON::Any.new(genre.try &.as_s || ""),
+     "genreUcid" => JSON::Any.new(genre_ucid.try &.as_s?),
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index 5c28358b4..53976461c 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -1,3 +1,4 @@
++<% if audio_streams && fmt_stream && preferred_captions && captions %>
+ <video style="outline:none;width:100%;background-color:#000" playsinline poster="<%= thumbnail %>"
+     id="player" class="on-video_player video-js player-style-<%= params.player_style %>"
+     preload="<% if params.preload %>auto<% else %>none<% end %>"
+@@ -79,3 +80,4 @@
+ %>
+ </script>
+ <script src="/js/player.js?v=<%= ASSET_COMMIT %>"></script>
++<% end %>
+diff --git a/src/invidious/views/embed.ecr b/src/invidious/views/embed.ecr
+index 1bf5cc3e4..c9e22df6e 100644
+--- a/src/invidious/views/embed.ecr
++++ b/src/invidious/views/embed.ecr
+@@ -31,7 +31,15 @@
+ %>
+ </script>
+ 
+-<%= rendered "components/player" %>
++<% if video.reason.nil? %>
++<h3>
++    <%= video.reason %>
++</h3>
++<% else %>
++<div id="player-container" class="h-box">
++    <%= rendered "components/player" %>
++</div>
++<% end %>
+ <script src="/js/embed.js?v=<%= ASSET_COMMIT %>"></script>
+ </body>
+ </html>
+diff --git a/src/invidious/views/error.ecr b/src/invidious/views/error.ecr
+index 04eb74d54..d0752e5b8 100644
+--- a/src/invidious/views/error.ecr
++++ b/src/invidious/views/error.ecr
+@@ -4,5 +4,4 @@
+ 
+ <div class="h-box">
+     <%= error_message %>
+-    <%= next_steps %>
+ </div>
+diff --git a/src/invidious/views/watch.ecr b/src/invidious/views/watch.ecr
+index 45c58a162..742cc8f48 100644
+--- a/src/invidious/views/watch.ecr
++++ b/src/invidious/views/watch.ecr
+@@ -70,9 +70,11 @@ we're going to need to do it here in order to allow for translations.
+ %>
+ </script>
+ 
++<% if video.reason.nil? %>
+ <div id="player-container" class="h-box">
+     <%= rendered "components/player" %>
+ </div>
++<% end %>
+ 
+ <div class="h-box">
+     <h1>
+@@ -96,7 +98,10 @@ we're going to need to do it here in order to allow for translations.
+ 
+     <% if video.reason %>
+         <h3>
+-            <%= video.reason %>
++            <%= translate(locale, "error_from_youtube_unplayable") %> <%= video.reason %>
++        </h3>
++        <h3>
++            <%= translate(locale, "next_steps_error_message") %>
+         </h3>
+     <% elsif video.premiere_timestamp.try &.> Time.utc %>
+         <h3>
+@@ -112,7 +117,11 @@ we're going to need to do it here in order to allow for translations.
+ <div class="pure-g">
+     <div class="pure-u-1 pure-u-lg-1-5">
+         <div class="h-box">
+-            <span id="watch-on-youtube">
++            <span id="refresh-page">
++                <a href="<% env.request.resource %>"><%= translate(locale, "refresh_page") %></a>
++            </span>
++
++            <p id="watch-on-youtube">
+                 <%-
+                     link_yt_watch = URI.new(scheme: "https", host: "www.youtube.com", path: "/watch", query: "v=#{video.id}")
+                     link_yt_embed = URI.new(scheme: "https", host: "www.youtube.com", path: "/embed/#{video.id}")
+@@ -125,7 +134,7 @@ we're going to need to do it here in order to allow for translations.
+                 -%>
+                 <a id="link-yt-watch" rel="noreferrer noopener" data-base-url="<%= link_yt_watch %>" href="<%= link_yt_watch %>"><%= translate(locale, "videoinfo_watch_on_youTube") %></a>
+                 (<a id="link-yt-embed" rel="noreferrer noopener" data-base-url="<%= link_yt_embed %>" href="<%= link_yt_embed %>"><%= translate(locale, "videoinfo_youTube_embed_link") %></a>)
+-            </span>
++            </p>
+ 
+             <p id="watch-on-another-invidious-instance">
+                 <%- link_iv_other = IV::Frontend::Misc.redirect_url(env) -%>
+@@ -186,11 +195,14 @@ we're going to need to do it here in order to allow for translations.
+                 <% end %>
+             <% end %>
+ 
++            <% if video_assets %>
+             <%= Invidious::Frontend::WatchPage.download_widget(locale, video, video_assets) %>
++            <% end %>
+ 
+             <p id="views"><i class="icon ion-ios-eye"></i> <%= number_with_separator(video.views) %></p>
+             <p id="likes"><i class="icon ion-ios-thumbs-up"></i> <%= number_with_separator(video.likes) %></p>
+             <p id="dislikes" style="display: none; visibility: hidden;"></p>
++            <% if video.genre %>
+             <p id="genre"><%= translate(locale, "Genre: ") %>
+                 <% if !video.genre_url %>
+                     <%= video.genre %>
+@@ -198,6 +210,7 @@ we're going to need to do it here in order to allow for translations.
+                     <a href="<%= video.genre_url %>"><%= video.genre %></a>
+                 <% end %>
+             </p>
++            <% end %>
+             <% if video.license %>
+                 <% if video.license.empty? %>
+                     <p id="license"><%= translate(locale, "License: ") %><%= translate(locale, "Standard YouTube license") %></p>
+
+From 9438a6df357dc95ce15427b033730e512ae10c07 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Sun, 13 Oct 2024 23:36:23 +0200
+Subject: [PATCH 2/3] extract islisted info + throw error only on not found
+ video
+
+---
+ src/invidious/videos.cr                      |  7 +--
+ src/invidious/videos/parser.cr               | 55 ++++++++++++++------
+ src/invidious/yt_backend/extractors_utils.cr | 17 ++++++
+ 3 files changed, 61 insertions(+), 18 deletions(-)
+
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 16ccf1979..78e8b4f84 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -326,15 +326,16 @@ end
+ def fetch_video(id, region)
+   info = extract_video_info(video_id: id)
+ 
+-  if info["reason"]?
++  if info["reason"]? && info["subreason"]?
+     reason = info["reason"].as_s
+-    if info.dig?("subreason")
++    puts info
++    if info.dig?("subreason").nil?
+       subreason = info["subreason"].as_s
+     else
+       subreason = "No additional reason"
+     end
+     if reason == "Video unavailable"
+-      raise NotFoundException.new(reason + ": " + subreason || "")
++      raise NotFoundException.new(reason + ": Video not found" || "")
+     elsif {"Private video"}.any?(reason)
+       raise InfoException.new(reason + ": " + subreason || "")
+     end
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 84e468b5e..941081bf6 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -70,9 +70,10 @@ def extract_video_info(video_id : String)
+     subreason = subreason_main.try &.[]?("simpleText").try &.as_s
+     subreason ||= subreason_main.try &.[]("runs").as_a.map(&.[]("text")).join("")
+ 
+-    # Stop here if video is not a scheduled livestream or
+-    # for LOGIN_REQUIRED when videoDetails element is not found because retrying won't help
+-    if {"Private video", "Video unavailable"}.any?(reason)
++    # Stop if private video or video not found.
++    # But for video unavailable, only stop if playability_status is ERROR because playability_status UNPLAYABLE
++    # still gives all the necessary info for displaying the video page (title, description and more)
++    if {"Private video", "Video unavailable"}.any?(reason) && !{"UNPLAYABLE"}.any?(playability_status)
+       return {
+         "version"   => JSON::Any.new(Video::SCHEMA_VERSION.to_i64),
+         "reason"    => JSON::Any.new(reason),
+@@ -232,15 +233,20 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   length_txt = (microformat["lengthSeconds"]? || video_details["lengthSeconds"]?)
+     .try &.as_s.to_i64
+ 
+-  published_txt = video_primary_renderer
+-    .try &.dig?("dateText", "simpleText")
++  published = microformat["publishDate"]?
++    .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) }
+ 
+-  if published_txt.try &.as_s.includes?("ago") && !published_txt.nil?
+-    published = decode_date(published_txt.as_s.lchop("Started streaming "))
+-  elsif published_txt && published_txt.try &.as_s.matches?(/(\w{3} \d{1,2}, \d{4})$/)
+-    published = Time.parse(published_txt.as_s.match!(/(\w{3} \d{1,2}, \d{4})$/)[0], "%b %-d, %Y", Time::Location::UTC)
+-  else
+-    published = Time.utc
++  if !published
++    published_txt = video_primary_renderer
++      .try &.dig?("dateText", "simpleText")
++
++    if published_txt.try &.as_s.includes?("ago") && !published_txt.nil?
++      published = decode_date(published_txt.as_s.lchop("Started streaming "))
++    elsif published_txt && published_txt.try &.as_s.matches?(/(\w{3} \d{1,2}, \d{4})$/)
++      published = Time.parse(published_txt.as_s.match!(/(\w{3} \d{1,2}, \d{4})$/)[0], "%b %-d, %Y", Time::Location::UTC)
++    else
++      published = Time.utc
++    end
+   end
+ 
+   premiere_timestamp = microformat.dig?("liveBroadcastDetails", "startTimestamp")
+@@ -260,8 +266,24 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     .try &.as_a.map &.as_s || [] of String
+ 
+   allow_ratings = video_details["allowRatings"]?.try &.as_bool
++
+   family_friendly = microformat["isFamilySafe"]?.try &.as_bool
++  if family_friendly.nil?
++    family_friendly = true # if isFamilySafe not found then assume is safe
++  end
++
+   is_listed = video_details["isCrawlable"]?.try &.as_bool
++  if video_badges = video_primary_renderer.try &.dig?("badges")
++    if has_unlisted_badge?(video_badges)
++      is_listed ||= false
++    else
++      is_listed ||= true
++    end
++  # if no badges but videoDetails not available then assume isListed
++  else
++    is_listed ||= true
++  end
++
+   is_upcoming = video_details["isUpcoming"]?.try &.as_bool
+ 
+   keywords = video_details["keywords"]?
+@@ -417,6 +439,9 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   # Author infos
+ 
++  author = video_details["author"]?.try &.as_s
++  ucid = video_details["channelId"]?.try &.as_s
++
+   if author_info = video_secondary_renderer.try &.dig?("owner", "videoOwnerRenderer")
+     author_thumbnail = author_info.dig?("thumbnail", "thumbnails", 0, "url")
+     author_verified = has_verified_badge?(author_info["badges"]?)
+@@ -425,8 +450,8 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+       .try { |t| t["simpleText"]? || t.dig?("runs", 0, "text") }
+       .try &.as_s.split(" ", 2)[0]
+ 
+-    author = author_info.dig?("title", "runs", 0, "text").try &.as_s
+-    ucid = author_info.dig?("title", "runs", 0, "navigationEndpoint", "browseEndpoint", "browseId").try &.as_s
++    author ||= author_info.dig?("title", "runs", 0, "text").try &.as_s
++    ucid ||= author_info.dig?("title", "runs", 0, "navigationEndpoint", "browseEndpoint", "browseId").try &.as_s
+   end
+ 
+   # Return data
+@@ -451,8 +476,8 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     # Extra video infos
+     "allowedRegions"   => JSON::Any.new(allowed_regions.map { |v| JSON::Any.new(v) }),
+     "allowRatings"     => JSON::Any.new(allow_ratings || false),
+-    "isFamilyFriendly" => JSON::Any.new(family_friendly || true),
+-    "isListed"         => JSON::Any.new(is_listed || false),
++    "isFamilyFriendly" => JSON::Any.new(family_friendly),
++    "isListed"         => JSON::Any.new(is_listed),
+     "isUpcoming"       => JSON::Any.new(is_upcoming || false),
+     "keywords"         => JSON::Any.new(keywords.map { |v| JSON::Any.new(v) }),
+     "isPostLiveDvr"    => JSON::Any.new(post_live_dvr),
+diff --git a/src/invidious/yt_backend/extractors_utils.cr b/src/invidious/yt_backend/extractors_utils.cr
+index c83a2de5a..f7b58430e 100644
+--- a/src/invidious/yt_backend/extractors_utils.cr
++++ b/src/invidious/yt_backend/extractors_utils.cr
+@@ -68,6 +68,23 @@ rescue ex
+   return false
+ end
+ 
++def has_unlisted_badge?(badges : JSON::Any?)
++  return false if badges.nil?
++
++  badges.as_a.each do |badge|
++    icon_type = badge.dig("metadataBadgeRenderer", "icon", "iconType").as_s
++
++    return true if icon_type == "PRIVACY_UNLISTED"
++  end
++
++  return false
++rescue ex
++  LOGGER.debug("Unable to parse owner badges. Got exception: #{ex.message}")
++  LOGGER.trace("Owner badges data: #{badges.to_json}")
++
++  return false
++end
++
+ # This function extracts SearchVideo items from a Category.
+ # Categories are commonly returned in search results and trending pages.
+ def extract_category(category : Category) : Array(SearchVideo)
+
+From 126f8fd09751d7c01d02960c60ca2bcd29ae34a1 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Mon, 14 Oct 2024 00:59:40 +0200
+Subject: [PATCH 3/3] fix detecting live_now
+
+---
+ src/invidious/videos/parser.cr | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 941081bf6..18e37dde3 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -236,7 +236,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+   published = microformat["publishDate"]?
+     .try { |t| Time.parse(t.as_s, "%Y-%m-%d", Time::Location::UTC) }
+ 
+-  if !published
++  if published.nil?
+     published_txt = video_primary_renderer
+       .try &.dig?("dateText", "simpleText")
+ 
+@@ -254,8 +254,10 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+ 
+   live_now = microformat.dig?("liveBroadcastDetails", "isLiveNow")
+     .try &.as_bool
+-  live_now ||= video_primary_renderer
+-    .try &.dig?("viewCount", "videoViewCountRenderer", "isLive").try &.as_bool || false
++  if live_now.nil?
++    live_now = video_primary_renderer
++      .try &.dig?("viewCount", "videoViewCountRenderer", "isLive").try &.as_bool || false
++  end
+ 
+   post_live_dvr = video_details.dig?("isPostLiveDvr")
+     .try &.as_bool || false
+@@ -279,7 +281,7 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     else
+       is_listed ||= true
+     end
+-  # if no badges but videoDetails not available then assume isListed
++    # if no badges but videoDetails not available then assume isListed
+   else
+     is_listed ||= true
+   end
