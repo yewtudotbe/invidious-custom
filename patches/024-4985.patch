@@ -1,7 +1,7 @@
 From 194fb72f34536f582be5eee119a37d120dc5915a Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 02:10:55 +0200
-Subject: [PATCH 1/3] add support for invidious companion
+Subject: [PATCH 1/4] add support for invidious companion
 
 ---
  config/config.example.yml               | 16 ++++++
@@ -191,7 +191,7 @@ index baa3cd927..212263dac 100644
 From 807e805cda34eee4fc6340ab84a237109237f8ce Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:51:00 +0200
-Subject: [PATCH 2/3] redirect latest_version and dash manifest to invidious
+Subject: [PATCH 2/4] redirect latest_version and dash manifest to invidious
  companion
 
 ---
@@ -409,7 +409,7 @@ index 212263dac..333d8ab71 100644
 From 4d8484d5acf86c06ca7e40e5c2f0d83cb47cc968 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:53:08 +0200
-Subject: [PATCH 3/3] fix Shadowing outer local variable `response`
+Subject: [PATCH 3/4] fix Shadowing outer local variable `response`
 
 ---
  src/invidious/yt_backend/youtube_api.cr | 8 ++++----
@@ -435,3 +435,26 @@ index 333d8ab71..571ca30b5 100644
          end
        rescue ex
          raise InfoException.new("Error while communicating with Invidious companion: " + (ex.message || "no extra info found"))
+
+From 92d62ef8a2606e13141c65a798e2799a7ba17e8b Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Mon, 21 Oct 2024 01:20:16 +0200
+Subject: [PATCH 4/4] fixing condition for Content-Security-Policy
+
+---
+ src/invidious/routes/watch.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/routes/watch.cr b/src/invidious/routes/watch.cr
+index 961d7b311..2cf8a725b 100644
+--- a/src/invidious/routes/watch.cr
++++ b/src/invidious/routes/watch.cr
+@@ -190,7 +190,7 @@ module Invidious::Routes::Watch
+       captions: video.captions
+     )
+ 
+-    if (CONFIG.invidious_companion && env.params.query["local"] == true)
++    if (CONFIG.invidious_companion && (preferences.local || preferences.quality == "dash"))
+       env.response.headers["Content-Security-Policy"] =
+         env.response.headers["Content-Security-Policy"]
+           .gsub("media-src", "media-src " + video.invidious_companion["baseUrl"].as_s)
