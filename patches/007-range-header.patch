@@ -1,29 +1,37 @@
-From 0b438cd5cfca597362d68e730d536046ba881f7d Mon Sep 17 00:00:00 2001
-From: Emilien Devos <contact@emiliendevos.be>
-Date: Fri, 10 Jun 2022 17:40:42 +0200
-Subject: [PATCH 1/1] use range query string instead of header
+From 88fdd24e4ff8bf60ad6d71e3ecf63bd01683b308 Mon Sep 17 00:00:00 2001
+From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
+Date: Sat, 26 Oct 2024 19:33:40 +0200
+Subject: [PATCH 1/1] patch player post request
 
 ---
- assets/js/player.js | 6 ++++++
- 1 file changed, 6 insertions(+)
+ assets/js/player.js | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
-index 7d099e66..18f34e97 100644
+index 353a5296..2c224743 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
-@@ -42,6 +42,12 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+@@ -42,6 +42,21 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
  var save_player_pos_key = 'save_player_pos';
  
  videojs.Vhs.xhr.beforeRequest = function(options) {
-+    if (options.headers){
-+        if (options.headers.Range) {
-+            options.uri = options.uri + '&range=' + options.headers.Range.split("=")[1];
-+            delete options.headers.Range;
++    // send range in the query string and with POST method
++    // taken from Freetube:
++    // https://github.com/FreeTubeApp/FreeTube/blob/development/src/renderer/components/ft-shaka-video-player/ft-shaka-video-player.js#L1096
++    if (options.uri.includes("videoplayback")) {
++        options.method = 'POST'
++        options.body = new Uint8Array([0x78, 0]) // protobuf: { 15: 0 } (no idea what it means but this is what YouTube uses)
++
++        if (request.headers.Range) {
++            options.uri += `&range=${options.headers.Range.split('=')[1]}`
++            delete options.headers.Range
 +        }
++
++        options.uri += '&alr=yes'
 +    }
++
      // set local if requested not videoplayback
      if (!options.uri.includes('videoplayback')) {
          if (!options.uri.includes('local=true'))
 -- 
-2.36.1
-
+2.47.0
