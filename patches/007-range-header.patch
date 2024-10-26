@@ -1,17 +1,17 @@
-From 502572edc7cb9119720a7d2bcc7c9c7a296c7875 Mon Sep 17 00:00:00 2001
-From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
-Date: Sat, 26 Oct 2024 20:23:07 +0200
-Subject: [PATCH 1/1] range query string post
+From e8fc7399a52e022813ec33ec6db77ced3538bf34 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sat, 26 Oct 2024 20:53:28 +0200
+Subject: [PATCH 1/1] range header to query string
 
 ---
- assets/js/player.js | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ assets/js/player.js | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/assets/js/player.js b/assets/js/player.js
-index 353a5296..d0bad747 100644
+index 353a5296..18a870d7 100644
 --- a/assets/js/player.js
 +++ b/assets/js/player.js
-@@ -42,6 +42,21 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+@@ -42,6 +42,22 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
  var save_player_pos_key = 'save_player_pos';
  
  videojs.Vhs.xhr.beforeRequest = function(options) {
@@ -21,10 +21,11 @@ index 353a5296..d0bad747 100644
 +    if (options.uri.includes("videoplayback")) {
 +        options.method = 'POST'
 +        options.body = new Uint8Array([0x78, 0]) // protobuf: { 15: 0 } (no idea what it means but this is what YouTube uses)
-+
-+        if (options.headers.Range) {
-+            options.uri += `&range=${options.headers.Range.split('=')[1]}`
-+            delete options.headers.Range
++        if (options.headers) {
++            if (options.headers.Range) {
++                options.uri += `&range=${options.headers.Range.split('=')[1]}`
++                delete options.headers.range
++            }
 +        }
 +
 +        options.uri += '&alr=yes'
@@ -35,3 +36,4 @@ index 353a5296..d0bad747 100644
          if (!options.uri.includes('local=true'))
 -- 
 2.47.0
+
