@@ -1,17 +1,17 @@
-From 194fb72f34536f582be5eee119a37d120dc5915a Mon Sep 17 00:00:00 2001
+From 5b37d9596beae5635fe0b6772497a709daa7e2af Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 02:10:55 +0200
-Subject: [PATCH 1/4] add support for invidious companion
+Subject: [PATCH 1/8] add support for invidious companion
 
 ---
  config/config.example.yml               | 16 ++++++
  src/invidious/config.cr                 |  3 ++
  src/invidious/videos/parser.cr          | 66 +++++++++++++------------
- src/invidious/yt_backend/youtube_api.cr | 30 +++++++++--
- 4 files changed, 79 insertions(+), 36 deletions(-)
+ src/invidious/yt_backend/youtube_api.cr | 38 +++++++++++---
+ 4 files changed, 83 insertions(+), 40 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index e9eebfdec..cac226c6d 100644
+index 759b81e0e..0d3824a66 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -54,6 +54,22 @@ db:
@@ -38,10 +38,10 @@ index e9eebfdec..cac226c6d 100644
  #########################################
  #
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index a097b7f1b..937b0607a 100644
+index c1766fbb3..0f13f6959 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -138,6 +138,9 @@ class Config
+@@ -149,6 +149,9 @@ class Config
    # poToken for passing bot attestation
    property po_token : String? = nil
  
@@ -133,7 +133,7 @@ index fb8935d98..1b4c16206 100644
  
    {"captions", "playabilityStatus", "playerConfig", "storyboards"}.each do |f|
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index baa3cd927..212263dac 100644
+index e0a3181fb..54dde1bb0 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
 @@ -616,12 +616,19 @@ module YoutubeAPI
@@ -157,7 +157,7 @@ index baa3cd927..212263dac 100644
      if user_agent = client_config.user_agent
        headers["User-Agent"] = user_agent
      end
-@@ -635,11 +642,26 @@ module YoutubeAPI
+@@ -635,18 +642,33 @@ module YoutubeAPI
      LOGGER.trace("YoutubeAPI: ClientConfig: #{client_config}")
      LOGGER.trace("YoutubeAPI: POST data: #{data}")
  
@@ -166,32 +166,43 @@ index baa3cd927..212263dac 100644
      # Send the POST request
 -    body = YT_POOL.client() do |client|
 -      client.post(url, headers: headers, body: data.to_json) do |response|
--        self._decompress(response.body_io, response.headers["Content-Encoding"]?)
+-        if response.status_code != 200
+-          raise InfoException.new("Error: non 200 status code. Youtube API returned \
+-            status code #{response.status_code}. See <a href=\"https://docs.invidious.io/youtube-errors-explained/\"> \
+-            https://docs.invidious.io/youtube-errors-explained/</a> for troubleshooting.")
 +    if invidious_companion_url && endpoint == "/youtubei/v1/player"
 +      begin
 +        body = make_client(URI.parse(invidious_companion_url),
 +          &.post(endpoint, headers: headers, body: data.to_json).body)
 +      rescue
 +        raise InfoException.new("Unable to communicate with Invidious companion.")
-       end
++      end
 +    else
 +      body = YT_POOL.client() do |client|
 +        client.post(url, headers: headers, body: data.to_json) do |response|
++          if response.status_code != 200
++            raise InfoException.new("Error: non 200 status code. Youtube API returned \
++              status code #{response.status_code}. See <a href=\"https://docs.invidious.io/youtube-errors-explained/\"> \
++              https://docs.invidious.io/youtube-errors-explained/</a> for troubleshooting.")
++          end
 +          self._decompress(response.body_io, response.headers["Content-Encoding"]?)
-+        end
-+      end
-+    end
-+
-+    if body.nil? && invidious_companion_url
-+      raise InfoException.new("Unable to communicate with Invidious companion.")
+         end
+-        self._decompress(response.body_io, response.headers["Content-Encoding"]?)
+       end
      end
  
++    if body.nil? && invidious_companion_url
++      raise InfoException.new("Unable to communicate with Invidious companion.")
++    end
++
      # Convert result to Hash
+     initial_data = JSON.parse(body).as_h
+ 
 
-From 807e805cda34eee4fc6340ab84a237109237f8ce Mon Sep 17 00:00:00 2001
+From 197711fab4b82779aadd1219804d68b5387f5013 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:51:00 +0200
-Subject: [PATCH 2/4] redirect latest_version and dash manifest to invidious
+Subject: [PATCH 2/8] redirect latest_version and dash manifest to invidious
  companion
 
 ---
@@ -207,7 +218,7 @@ Subject: [PATCH 2/4] redirect latest_version and dash manifest to invidious
  9 files changed, 52 insertions(+), 17 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index cac226c6d..f366e1d75 100644
+index 0d3824a66..49b971353 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -68,7 +68,8 @@ db:
@@ -221,10 +232,10 @@ index cac226c6d..f366e1d75 100644
  
  #########################################
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 937b0607a..fe78169e5 100644
+index 0f13f6959..3075c93c3 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -139,7 +139,7 @@ class Config
+@@ -150,7 +150,7 @@ class Config
    property po_token : String? = nil
  
    # Invidious companion
@@ -363,7 +374,7 @@ index 5c28358b4..017b34625 100644
                  quality = fmt["quality"]
                  mimetype = HTML.escape(fmt["mimeType"].as_s)
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 212263dac..333d8ab71 100644
+index 54dde1bb0..d93334068 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
 @@ -642,15 +642,21 @@ module YoutubeAPI
@@ -394,7 +405,7 @@ index 212263dac..333d8ab71 100644
        end
      else
        body = YT_POOL.client() do |client|
-@@ -660,8 +666,8 @@ module YoutubeAPI
+@@ -665,8 +671,8 @@ module YoutubeAPI
        end
      end
  
@@ -406,17 +417,17 @@ index 212263dac..333d8ab71 100644
  
      # Convert result to Hash
 
-From 4d8484d5acf86c06ca7e40e5c2f0d83cb47cc968 Mon Sep 17 00:00:00 2001
+From b90ecbe219815b637ab9e1e70b2a27fce5666169 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:53:08 +0200
-Subject: [PATCH 3/4] fix Shadowing outer local variable `response`
+Subject: [PATCH 3/8] fix Shadowing outer local variable `response`
 
 ---
  src/invidious/yt_backend/youtube_api.cr | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 333d8ab71..571ca30b5 100644
+index d93334068..36dde3777 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
 @@ -649,11 +649,11 @@ module YoutubeAPI
@@ -436,10 +447,10 @@ index 333d8ab71..571ca30b5 100644
        rescue ex
          raise InfoException.new("Error while communicating with Invidious companion: " + (ex.message || "no extra info found"))
 
-From 92d62ef8a2606e13141c65a798e2799a7ba17e8b Mon Sep 17 00:00:00 2001
+From ae26082e026255afc109c71b8cf914efa9f4ef68 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Mon, 21 Oct 2024 01:20:16 +0200
-Subject: [PATCH 4/4] fixing condition for Content-Security-Policy
+Subject: [PATCH 4/8] fixing condition for Content-Security-Policy
 
 ---
  src/invidious/routes/watch.cr | 2 +-
@@ -458,3 +469,117 @@ index 961d7b311..2cf8a725b 100644
        env.response.headers["Content-Security-Policy"] =
          env.response.headers["Content-Security-Policy"]
            .gsub("media-src", "media-src " + video.invidious_companion["baseUrl"].as_s)
+
+From 5e31322f6a822855daca109261ba267f6c831ce4 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Fri, 1 Nov 2024 21:30:58 +0100
+Subject: [PATCH 5/8] throw error if inv_sig_helper and invidious_companion
+ used same time
+
+---
+ src/invidious.cr | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 56aca802f..c201ef84a 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -158,6 +158,12 @@ Invidious::Database.check_integrity(CONFIG)
+   {% puts "\nDone checking player dependencies, now compiling Invidious...\n" %}
+ {% end %}
+ 
++# invidious_companion and signature_server can't work together
++if CONFIG.signature_server && CONFIG.invidious_companion
++  puts "You can not run inv_sig_helper and invidious_companion at the same time."
++  exit(1)
++end
++
+ # Misc
+ 
+ DECRYPT_FUNCTION =
+
+From 5c6ca3e115a8ea1720dd45a94e1f496e9172475e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
+ <4016501+unixfox@users.noreply.github.com>
+Date: Tue, 5 Nov 2024 15:31:21 +0100
+Subject: [PATCH 6/8] Use sample instead of Random.rand
+
+Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
+---
+ src/invidious/yt_backend/youtube_api.cr | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 36dde3777..6e6a4fdff 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -649,7 +649,7 @@ module YoutubeAPI
+       puts "invidious companion section"
+       puts invidious_companion_urls[Random.rand(invidious_companion_urls.size)]
+       begin
+-        invidious_companion_response = make_client(URI.parse(invidious_companion_urls[Random.rand(invidious_companion_urls.size)]),
++        invidious_companion_response = make_client(URI.parse(invidious_companion_urls.sample),
+           &.post(endpoint, headers: headers, body: data.to_json))
+         body = invidious_companion_response.body
+         if (invidious_companion_response.status_code != 200)
+
+From b8d1707d788b48873bbd9631a5f062476ffbcc4a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
+ <4016501+unixfox@users.noreply.github.com>
+Date: Tue, 5 Nov 2024 15:31:45 +0100
+Subject: [PATCH 7/8] Remove debug puts functions
+
+Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
+---
+ src/invidious/yt_backend/youtube_api.cr | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 6e6a4fdff..107dfcd0d 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -646,8 +646,6 @@ module YoutubeAPI
+ 
+     # Send the POST request
+     if invidious_companion_urls && endpoint == "/youtubei/v1/player"
+-      puts "invidious companion section"
+-      puts invidious_companion_urls[Random.rand(invidious_companion_urls.size)]
+       begin
+         invidious_companion_response = make_client(URI.parse(invidious_companion_urls.sample),
+           &.post(endpoint, headers: headers, body: data.to_json))
+
+From 37df2b4efad250e9f0f8dd5f30b87de55db1f42a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
+ <4016501+unixfox@users.noreply.github.com>
+Date: Tue, 5 Nov 2024 15:50:59 +0100
+Subject: [PATCH 8/8] modify the description for config.example.yaml about
+ invidious companion
+
+---
+ config/config.example.yml | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/config/config.example.yml b/config/config.example.yml
+index 49b971353..7de530284 100644
+--- a/config/config.example.yml
++++ b/config/config.example.yml
+@@ -55,15 +55,14 @@ db:
+ #signature_server:
+ 
+ ##
+-## Path to the Invidious companion.
+-## An external program for loading the video streams from YouTube servers.
++## Invidious companion is an external program
++## for loading the video streams from YouTube servers.
+ ##
+ ## When this setting is commented out, Invidious companion is not used.
+ ##
+-## When this setting is configured and "external_port" is used then
+-## you need to configure Invidious companion routes into your reverse proxy.
+-## If "external_port" is not configured then Invidious will proxy the requests
++## When this setting is configured, then Invidious will proxy the requests
+ ## to Invidious companion.
++## Or randomly choose one if multiple Invidious companion are configured.
+ ##
+ ## Accepted values: "http(s)://<IP-HOSTNAME>:<Port>"
+ ## Default: <none>
