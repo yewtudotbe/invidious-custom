@@ -1,17 +1,17 @@
-From 5b37d9596beae5635fe0b6772497a709daa7e2af Mon Sep 17 00:00:00 2001
+From 3dff7a76cf9f64ec70aac0a057a3b0bfa1edfc82 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 02:10:55 +0200
-Subject: [PATCH 1/8] add support for invidious companion
+Subject: [PATCH 01/15] add support for invidious companion
 
 ---
- config/config.example.yml               | 16 ++++++
+ config/config.example.yml               | 16 ++++++++++
  src/invidious/config.cr                 |  3 ++
- src/invidious/videos/parser.cr          | 66 +++++++++++++------------
- src/invidious/yt_backend/youtube_api.cr | 38 +++++++++++---
- 4 files changed, 83 insertions(+), 40 deletions(-)
+ src/invidious/videos/parser.cr          | 41 +++++++++++++------------
+ src/invidious/yt_backend/youtube_api.cr | 38 ++++++++++++++++++-----
+ 4 files changed, 71 insertions(+), 27 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index 759b81e0e..0d3824a66 100644
+index a3a2eeb76..f715b356f 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -54,6 +54,22 @@ db:
@@ -38,10 +38,10 @@ index 759b81e0e..0d3824a66 100644
  #########################################
  #
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index c1766fbb3..0f13f6959 100644
+index c4ca622f9..54b3a799c 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -149,6 +149,9 @@ class Config
+@@ -151,6 +151,9 @@ class Config
    # poToken for passing bot attestation
    property po_token : String? = nil
  
@@ -52,33 +52,17 @@ index c1766fbb3..0f13f6959 100644
    @[YAML::Field(converter: Preferences::StringToCookies)]
    property cookies : HTTP::Cookies = HTTP::Cookies.new
 diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
-index fb8935d98..1b4c16206 100644
+index 915c9baf8..b8e9de201 100644
 --- a/src/invidious/videos/parser.cr
 +++ b/src/invidious/videos/parser.cr
-@@ -104,42 +104,44 @@ def extract_video_info(video_id : String)
+@@ -100,27 +100,30 @@ def extract_video_info(video_id : String)
    params = parse_video_info(video_id, player_response)
    params["reason"] = JSON::Any.new(reason) if reason
  
 -  new_player_response = nil
 -
--  # Second try in case WEB_CREATOR doesn't work with po_token.
--  # Only trigger if reason found and po_token configured.
--  if reason && CONFIG.po_token
--    client_config.client_type = YoutubeAPI::ClientType::WebEmbeddedPlayer
--    new_player_response = try_fetch_streaming_data(video_id, client_config)
--  end
-+  if CONFIG.invidious_companion.nil?
-+    new_player_response = nil
-+
-+    # Second try in case WEB_CREATOR doesn't work with po_token.
-+    # Only trigger if reason found and po_token configured.
-+    if reason && CONFIG.po_token
-+      client_config.client_type = YoutubeAPI::ClientType::WebEmbeddedPlayer
-+      new_player_response = try_fetch_streaming_data(video_id, client_config)
-+    end
- 
--  # Don't use Android client if po_token is passed because po_token doesn't
--  # work for Android client.
+-  # Don't use Android test suite client if po_token is passed because po_token doesn't
+-  # work for Android test suite client.
 -  if reason.nil? && CONFIG.po_token.nil?
 -    # Fetch the video streams using an Android client in order to get the
 -    # decrypted URLs and maybe fix throttling issues (#2194). See the
@@ -87,29 +71,17 @@ index fb8935d98..1b4c16206 100644
 -    client_config.client_type = YoutubeAPI::ClientType::AndroidTestSuite
 -    new_player_response = try_fetch_streaming_data(video_id, client_config)
 -  end
-+    # Don't use Android client if po_token is passed because po_token doesn't
-+    # work for Android client.
++  if CONFIG.invidious_companion.nil?
++    new_player_response = nil
++
++    # Don't use Android test suite client if po_token is passed because po_token doesn't
++    # work for Android test suite client.
 +    if reason.nil? && CONFIG.po_token.nil?
 +      # Fetch the video streams using an Android client in order to get the
 +      # decrypted URLs and maybe fix throttling issues (#2194). See the
 +      # following issue for an explanation about decrypted URLs:
 +      # https://github.com/TeamNewPipe/NewPipeExtractor/issues/562
 +      client_config.client_type = YoutubeAPI::ClientType::AndroidTestSuite
-+      new_player_response = try_fetch_streaming_data(video_id, client_config)
-+    end
- 
--  # Last hope
--  # Only trigger if reason found or didn't work wth Android client.
--  # TvHtml5ScreenEmbed now requires sig helper for it to work but doesn't work with po_token.
--  if reason && CONFIG.po_token.nil?
--    client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
--    new_player_response = try_fetch_streaming_data(video_id, client_config)
--  end
-+    # Last hope
-+    # Only trigger if reason found or didn't work wth Android client.
-+    # TvHtml5ScreenEmbed now requires sig helper for it to work but doesn't work with po_token.
-+    if reason && CONFIG.po_token.nil?
-+      client_config.client_type = YoutubeAPI::ClientType::TvHtml5ScreenEmbed
 +      new_player_response = try_fetch_streaming_data(video_id, client_config)
 +    end
  
@@ -126,17 +98,18 @@ index fb8935d98..1b4c16206 100644
  
 -    player_response = new_player_response
 -    params.delete("reason")
-+      player_response = new_player_response
-+      params.delete("reason")
++        player_response = new_player_response
++        params.delete("reason")
++      end
 +    end
    end
  
    {"captions", "playabilityStatus", "playerConfig", "storyboards"}.each do |f|
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index e0a3181fb..54dde1bb0 100644
+index 8f5aa61d3..8a90a76ed 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -616,12 +616,19 @@ module YoutubeAPI
+@@ -615,12 +615,19 @@ module YoutubeAPI
  
      headers = HTTP::Headers{
        "Content-Type"              => "application/json; charset=UTF-8",
@@ -157,7 +130,7 @@ index e0a3181fb..54dde1bb0 100644
      if user_agent = client_config.user_agent
        headers["User-Agent"] = user_agent
      end
-@@ -635,18 +642,33 @@ module YoutubeAPI
+@@ -634,18 +641,33 @@ module YoutubeAPI
      LOGGER.trace("YoutubeAPI: ClientConfig: #{client_config}")
      LOGGER.trace("YoutubeAPI: POST data: #{data}")
  
@@ -199,10 +172,10 @@ index e0a3181fb..54dde1bb0 100644
      initial_data = JSON.parse(body).as_h
  
 
-From 197711fab4b82779aadd1219804d68b5387f5013 Mon Sep 17 00:00:00 2001
+From 73c84baf9fa6eaf9c5d4981bc199f81306ebe5a2 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:51:00 +0200
-Subject: [PATCH 2/8] redirect latest_version and dash manifest to invidious
+Subject: [PATCH 02/15] redirect latest_version and dash manifest to invidious
  companion
 
 ---
@@ -218,7 +191,7 @@ Subject: [PATCH 2/8] redirect latest_version and dash manifest to invidious
  9 files changed, 52 insertions(+), 17 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index 0d3824a66..49b971353 100644
+index f715b356f..1e342382c 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -68,7 +68,8 @@ db:
@@ -232,10 +205,10 @@ index 0d3824a66..49b971353 100644
  
  #########################################
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 0f13f6959..3075c93c3 100644
+index 54b3a799c..ba4224ced 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -150,7 +150,7 @@ class Config
+@@ -152,7 +152,7 @@ class Config
    property po_token : String? = nil
  
    # Invidious companion
@@ -260,7 +233,7 @@ index d89e752cd..43d0eb2f2 100644
        response = YT_POOL.client &.get(URI.parse(dashmpd).request_target)
  
 diff --git a/src/invidious/routes/video_playback.cr b/src/invidious/routes/video_playback.cr
-index 24693662f..498ede4b8 100644
+index 26852d068..5fda70843 100644
 --- a/src/invidious/routes/video_playback.cr
 +++ b/src/invidious/routes/video_playback.cr
 @@ -294,6 +294,9 @@ module Invidious::Routes::VideoPlayback
@@ -307,10 +280,10 @@ index ae09e736e..131549d01 100644
  
    private macro getset_string(name)
 diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
-index 1b4c16206..7a744bdf0 100644
+index b8e9de201..28f3ea41f 100644
 --- a/src/invidious/videos/parser.cr
 +++ b/src/invidious/videos/parser.cr
-@@ -159,6 +159,10 @@ def extract_video_info(video_id : String)
+@@ -141,6 +141,10 @@ def extract_video_info(video_id : String)
      params["streamingData"] = streaming_data
    end
  
@@ -321,7 +294,7 @@ index 1b4c16206..7a744bdf0 100644
    # Data structure version, for cache control
    params["version"] = JSON::Any.new(Video::SCHEMA_VERSION.to_i64)
  
-@@ -458,11 +462,12 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+@@ -449,11 +453,12 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
      # Music section
      "music" => JSON.parse(music_list.to_json),
      # Author infos
@@ -374,10 +347,10 @@ index 5c28358b4..017b34625 100644
                  quality = fmt["quality"]
                  mimetype = HTML.escape(fmt["mimeType"].as_s)
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 54dde1bb0..d93334068 100644
+index 8a90a76ed..de2050348 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -642,15 +642,21 @@ module YoutubeAPI
+@@ -641,15 +641,21 @@ module YoutubeAPI
      LOGGER.trace("YoutubeAPI: ClientConfig: #{client_config}")
      LOGGER.trace("YoutubeAPI: POST data: #{data}")
  
@@ -405,7 +378,7 @@ index 54dde1bb0..d93334068 100644
        end
      else
        body = YT_POOL.client() do |client|
-@@ -665,8 +671,8 @@ module YoutubeAPI
+@@ -664,8 +670,8 @@ module YoutubeAPI
        end
      end
  
@@ -417,20 +390,20 @@ index 54dde1bb0..d93334068 100644
  
      # Convert result to Hash
 
-From b90ecbe219815b637ab9e1e70b2a27fce5666169 Mon Sep 17 00:00:00 2001
+From 195446337159d2cb92b48510af7311fe0cc0f5bb Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Sun, 20 Oct 2024 23:53:08 +0200
-Subject: [PATCH 3/8] fix Shadowing outer local variable `response`
+Subject: [PATCH 03/15] fix Shadowing outer local variable `response`
 
 ---
  src/invidious/yt_backend/youtube_api.cr | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index d93334068..36dde3777 100644
+index de2050348..b04942038 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -649,11 +649,11 @@ module YoutubeAPI
+@@ -648,11 +648,11 @@ module YoutubeAPI
        puts "invidious companion section"
        puts invidious_companion_urls[Random.rand(invidious_companion_urls.size)]
        begin
@@ -447,10 +420,10 @@ index d93334068..36dde3777 100644
        rescue ex
          raise InfoException.new("Error while communicating with Invidious companion: " + (ex.message || "no extra info found"))
 
-From ae26082e026255afc109c71b8cf914efa9f4ef68 Mon Sep 17 00:00:00 2001
+From c612423a4d64f0adbef135074fc55dcc1c362f84 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Mon, 21 Oct 2024 01:20:16 +0200
-Subject: [PATCH 4/8] fixing condition for Content-Security-Policy
+Subject: [PATCH 04/15] fixing condition for Content-Security-Policy
 
 ---
  src/invidious/routes/watch.cr | 2 +-
@@ -470,10 +443,10 @@ index 961d7b311..2cf8a725b 100644
          env.response.headers["Content-Security-Policy"]
            .gsub("media-src", "media-src " + video.invidious_companion["baseUrl"].as_s)
 
-From 5e31322f6a822855daca109261ba267f6c831ce4 Mon Sep 17 00:00:00 2001
+From 2cc204a0457665f8e334970d7e54b1843a667ab6 Mon Sep 17 00:00:00 2001
 From: Emilien <4016501+unixfox@users.noreply.github.com>
 Date: Fri, 1 Nov 2024 21:30:58 +0100
-Subject: [PATCH 5/8] throw error if inv_sig_helper and invidious_companion
+Subject: [PATCH 05/15] throw error if inv_sig_helper and invidious_companion
  used same time
 
 ---
@@ -481,10 +454,10 @@ Subject: [PATCH 5/8] throw error if inv_sig_helper and invidious_companion
  1 file changed, 6 insertions(+)
 
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 56aca802f..c201ef84a 100644
+index b422dcbbf..2fd9cdd8d 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -158,6 +158,12 @@ Invidious::Database.check_integrity(CONFIG)
+@@ -161,6 +161,12 @@ Invidious::Database.check_integrity(CONFIG)
    {% puts "\nDone checking player dependencies, now compiling Invidious...\n" %}
  {% end %}
  
@@ -498,11 +471,11 @@ index 56aca802f..c201ef84a 100644
  
  DECRYPT_FUNCTION =
 
-From 5c6ca3e115a8ea1720dd45a94e1f496e9172475e Mon Sep 17 00:00:00 2001
+From 1c9f5b0a2b38ad94fb8972764ffae98df1e41dc9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
  <4016501+unixfox@users.noreply.github.com>
 Date: Tue, 5 Nov 2024 15:31:21 +0100
-Subject: [PATCH 6/8] Use sample instead of Random.rand
+Subject: [PATCH 06/15] Use sample instead of Random.rand
 
 Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
 ---
@@ -510,10 +483,10 @@ Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 36dde3777..6e6a4fdff 100644
+index b04942038..1bd236d28 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -649,7 +649,7 @@ module YoutubeAPI
+@@ -648,7 +648,7 @@ module YoutubeAPI
        puts "invidious companion section"
        puts invidious_companion_urls[Random.rand(invidious_companion_urls.size)]
        begin
@@ -523,11 +496,11 @@ index 36dde3777..6e6a4fdff 100644
          body = invidious_companion_response.body
          if (invidious_companion_response.status_code != 200)
 
-From b8d1707d788b48873bbd9631a5f062476ffbcc4a Mon Sep 17 00:00:00 2001
+From 27b24f51abcccd1c68f4dc1c29c0c62ca26e604c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
  <4016501+unixfox@users.noreply.github.com>
 Date: Tue, 5 Nov 2024 15:31:45 +0100
-Subject: [PATCH 7/8] Remove debug puts functions
+Subject: [PATCH 07/15] Remove debug puts functions
 
 Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
 ---
@@ -535,10 +508,10 @@ Co-authored-by: syeopite <70992037+syeopite@users.noreply.github.com>
  1 file changed, 2 deletions(-)
 
 diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
-index 6e6a4fdff..107dfcd0d 100644
+index 1bd236d28..68abcf48d 100644
 --- a/src/invidious/yt_backend/youtube_api.cr
 +++ b/src/invidious/yt_backend/youtube_api.cr
-@@ -646,8 +646,6 @@ module YoutubeAPI
+@@ -645,8 +645,6 @@ module YoutubeAPI
  
      # Send the POST request
      if invidious_companion_urls && endpoint == "/youtubei/v1/player"
@@ -548,11 +521,11 @@ index 6e6a4fdff..107dfcd0d 100644
          invidious_companion_response = make_client(URI.parse(invidious_companion_urls.sample),
            &.post(endpoint, headers: headers, body: data.to_json))
 
-From 37df2b4efad250e9f0f8dd5f30b87de55db1f42a Mon Sep 17 00:00:00 2001
+From 409df4cff3cc69c5565a12feb307441eed36f937 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20=28perso=29?=
  <4016501+unixfox@users.noreply.github.com>
 Date: Tue, 5 Nov 2024 15:50:59 +0100
-Subject: [PATCH 8/8] modify the description for config.example.yaml about
+Subject: [PATCH 08/15] modify the description for config.example.yaml about
  invidious companion
 
 ---
@@ -560,7 +533,7 @@ Subject: [PATCH 8/8] modify the description for config.example.yaml about
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/config/config.example.yml b/config/config.example.yml
-index 49b971353..7de530284 100644
+index 1e342382c..76a9a077c 100644
 --- a/config/config.example.yml
 +++ b/config/config.example.yml
 @@ -55,15 +55,14 @@ db:
@@ -583,3 +556,706 @@ index 49b971353..7de530284 100644
  ##
  ## Accepted values: "http(s)://<IP-HOSTNAME>:<Port>"
  ## Default: <none>
+
+From ff3305d52175c517b035d79b3c0c6a84809cbd0f Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Fri, 8 Nov 2024 21:05:17 +0100
+Subject: [PATCH 09/15] move config checks for invidious companion
+
+---
+ config/config.example.yml | 12 +++++++++++-
+ src/invidious.cr          |  6 ------
+ src/invidious/config.cr   | 18 ++++++++++++++++++
+ 3 files changed, 29 insertions(+), 7 deletions(-)
+
+diff --git a/config/config.example.yml b/config/config.example.yml
+index 76a9a077c..06e535415 100644
+--- a/config/config.example.yml
++++ b/config/config.example.yml
+@@ -67,9 +67,19 @@ db:
+ ## Accepted values: "http(s)://<IP-HOSTNAME>:<Port>"
+ ## Default: <none>
+ ##
+-# invidious_companion:
++#invidious_companion:
+ # - http://127.0.0.1:8282
+ 
++##
++## API key for Invidious companion
++##
++## Needed when invidious_companion is configured
++##
++## Accepted values: "http(s)://<IP-HOSTNAME>:<Port>"
++## Default: <none>
++##
++
++#invidious_companion_key: "CHANGE_ME!!"
+ 
+ #########################################
+ #
+diff --git a/src/invidious.cr b/src/invidious.cr
+index 2fd9cdd8d..b422dcbbf 100644
+--- a/src/invidious.cr
++++ b/src/invidious.cr
+@@ -161,12 +161,6 @@ Invidious::Database.check_integrity(CONFIG)
+   {% puts "\nDone checking player dependencies, now compiling Invidious...\n" %}
+ {% end %}
+ 
+-# invidious_companion and signature_server can't work together
+-if CONFIG.signature_server && CONFIG.invidious_companion
+-  puts "You can not run inv_sig_helper and invidious_companion at the same time."
+-  exit(1)
+-end
+-
+ # Misc
+ 
+ DECRYPT_FUNCTION =
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index ba4224ced..7cd4bbdc9 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -154,6 +154,9 @@ class Config
+   # Invidious companion
+   property invidious_companion : Array(String)? = nil
+ 
++  # Invidious companion API key
++  property invidious_companion_key : String? = nil
++
+   # Saved cookies in "name1=value1; name2=value2..." format
+   @[YAML::Field(converter: Preferences::StringToCookies)]
+   property cookies : HTTP::Cookies = HTTP::Cookies.new
+@@ -225,6 +228,21 @@ class Config
+         end
+     {% end %}
+ 
++    if CONFIG.invidious_companion
++      # invidious_companion and signature_server can't work together
++      if CONFIG.signature_server
++        puts "Config: You can not run inv_sig_helper and invidious_companion at the same time."
++        exit(1)
++      end
++      if !CONFIG.invidious_companion_key
++        puts "Config: Please configure a key if you are using invidious companion."
++        exit(1)
++      elsif CONFIG.invidious_companion_key == "CHANGE_ME!!"
++        puts "Config: The value of 'invidious_companion_key' needs to be changed!!"
++        exit(1)
++      end
++    end
++
+     # HMAC_key is mandatory
+     # See: https://github.com/iv-org/invidious/issues/3854
+     if config.hmac_key.empty?
+
+From 1aa154b9787eddcdee960d06aed4c1c91f17c1c3 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sat, 16 Nov 2024 22:33:28 +0100
+Subject: [PATCH 10/15] separate invidious_companion logic + better config.yaml
+ config
+
+---
+ src/invidious/config.cr                   | 29 ++++++-
+ src/invidious/routes/api/manifest.cr      |  8 +-
+ src/invidious/routes/embed.cr             |  7 ++
+ src/invidious/routes/video_playback.cr    |  8 +-
+ src/invidious/routes/watch.cr             |  6 +-
+ src/invidious/videos.cr                   |  6 +-
+ src/invidious/videos/parser.cr            | 19 ++---
+ src/invidious/views/components/player.ecr |  6 +-
+ src/invidious/yt_backend/youtube_api.cr   | 95 ++++++++++++++---------
+ 9 files changed, 119 insertions(+), 65 deletions(-)
+
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 7cd4bbdc9..29f4b60c8 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -67,6 +67,28 @@ end
+ class Config
+   include YAML::Serializable
+ 
++  module URIArrayConverter
++    def self.to_yaml(values : Array(URI), yaml : YAML::Nodes::Builder)
++      yaml.sequence do
++        values.each { |v| yaml.scalar v.to_s }
++      end
++    end
++
++    def self.from_yaml(ctx : YAML::ParseContext, node : YAML::Nodes::Node) : Array(URI)
++      if node.is_a?(YAML::Nodes::Sequence)
++        node.map do |child|
++          unless child.is_a?(YAML::Nodes::Scalar)
++            node.raise "Expected scalar, not #{child.class}"
++          end
++
++          URI.parse(child.value)
++        end
++      else
++        node.raise "Expected sequence, not #{node.class}"
++      end
++    end
++  end
++
+   # Number of threads to use for crawling videos from channels (for updating subscriptions)
+   property channel_threads : Int32 = 1
+   # Time interval between two executions of the job that crawls channel videos (subscriptions update).
+@@ -152,10 +174,11 @@ class Config
+   property po_token : String? = nil
+ 
+   # Invidious companion
+-  property invidious_companion : Array(String)? = nil
++  @[YAML::Field(converter: Config::URIArrayConverter)]
++  property invidious_companion : Array(URI) = [] of URI
+ 
+   # Invidious companion API key
+-  property invidious_companion_key : String? = nil
++  property invidious_companion_key : String = ""
+ 
+   # Saved cookies in "name1=value1; name2=value2..." format
+   @[YAML::Field(converter: Preferences::StringToCookies)]
+@@ -228,7 +251,7 @@ class Config
+         end
+     {% end %}
+ 
+-    if CONFIG.invidious_companion
++    if !CONFIG.invidious_companion.empty?
+       # invidious_companion and signature_server can't work together
+       if CONFIG.signature_server
+         puts "Config: You can not run inv_sig_helper and invidious_companion at the same time."
+diff --git a/src/invidious/routes/api/manifest.cr b/src/invidious/routes/api/manifest.cr
+index 43d0eb2f2..2892d1b4b 100644
+--- a/src/invidious/routes/api/manifest.cr
++++ b/src/invidious/routes/api/manifest.cr
+@@ -1,6 +1,10 @@
+ module Invidious::Routes::API::Manifest
+   # /api/manifest/dash/id/:id
+   def self.get_dash_video_id(env)
++    if !CONFIG.invidious_companion.empty?
++      return error_template(403, "This endpoint is not permitted because it is handled by Invidious companion.")
++    end
++
+     env.response.headers.add("Access-Control-Allow-Origin", "*")
+     env.response.content_type = "application/dash+xml"
+ 
+@@ -20,10 +24,6 @@ module Invidious::Routes::API::Manifest
+       haltf env, status_code: 403
+     end
+ 
+-    if local && CONFIG.invidious_companion
+-      return env.redirect "#{video.invidious_companion["baseUrl"].as_s}#{env.request.path}?#{env.request.query}"
+-    end
+-
+     if dashmpd = video.dash_manifest_url
+       response = YT_POOL.client &.get(URI.parse(dashmpd).request_target)
+ 
+diff --git a/src/invidious/routes/embed.cr b/src/invidious/routes/embed.cr
+index 266f7ba4b..23f2bbe1f 100644
+--- a/src/invidious/routes/embed.cr
++++ b/src/invidious/routes/embed.cr
+@@ -201,6 +201,13 @@ module Invidious::Routes::Embed
+       return env.redirect url
+     end
+ 
++    if (!CONFIG.invidious_companion.empty? && (preferences.local || preferences.quality == "dash"))
++      env.response.headers["Content-Security-Policy"] =
++        env.response.headers["Content-Security-Policy"]
++          .gsub("media-src", "media-src " + video.invidious_companion.not_nil!["baseUrl"].as_s)
++          .gsub("connect-src", "connect-src " + video.invidious_companion.not_nil!["baseUrl"].as_s)
++    end
++
+     rendered "embed"
+   end
+ end
+diff --git a/src/invidious/routes/video_playback.cr b/src/invidious/routes/video_playback.cr
+index 5fda70843..17b1022a8 100644
+--- a/src/invidious/routes/video_playback.cr
++++ b/src/invidious/routes/video_playback.cr
+@@ -253,6 +253,10 @@ module Invidious::Routes::VideoPlayback
+   # YouTube /videoplayback links expire after 6 hours,
+   # so we have a mechanism here to redirect to the latest version
+   def self.latest_version(env)
++    if !CONFIG.invidious_companion.empty? && CONFIG.disabled?("downloads")
++      return error_template(403, "This endpoint is not permitted because it is handled by Invidious companion.")
++    end
++
+     id = env.params.query["id"]?
+     itag = env.params.query["itag"]?.try &.to_i?
+ 
+@@ -294,8 +298,8 @@ module Invidious::Routes::VideoPlayback
+     end
+ 
+     if local
+-      if (CONFIG.invidious_companion)
+-        return env.redirect "#{video.invidious_companion["baseUrl"].as_s}#{env.request.path}?#{env.request.query}"
++      if (!CONFIG.invidious_companion.empty?)
++        return env.redirect "#{video.invidious_companion.not_nil!["baseUrl"].as_s}#{env.request.path}?#{env.request.query}"
+       end
+       url = URI.parse(url).request_target.not_nil!
+       url += "&title=#{URI.encode_www_form(title, space_to_plus: false)}" if title
+diff --git a/src/invidious/routes/watch.cr b/src/invidious/routes/watch.cr
+index 2cf8a725b..69780d78b 100644
+--- a/src/invidious/routes/watch.cr
++++ b/src/invidious/routes/watch.cr
+@@ -190,11 +190,11 @@ module Invidious::Routes::Watch
+       captions: video.captions
+     )
+ 
+-    if (CONFIG.invidious_companion && (preferences.local || preferences.quality == "dash"))
++    if (!CONFIG.invidious_companion.empty? && (preferences.local || preferences.quality == "dash"))
+       env.response.headers["Content-Security-Policy"] =
+         env.response.headers["Content-Security-Policy"]
+-          .gsub("media-src", "media-src " + video.invidious_companion["baseUrl"].as_s)
+-          .gsub("connect-src", "connect-src " + video.invidious_companion["baseUrl"].as_s)
++          .gsub("media-src", "media-src " + video.invidious_companion.not_nil!["baseUrl"].as_s)
++          .gsub("connect-src", "connect-src " + video.invidious_companion.not_nil!["baseUrl"].as_s)
+     end
+ 
+     templated "watch"
+diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+index 131549d01..7670e9a92 100644
+--- a/src/invidious/videos.cr
++++ b/src/invidious/videos.cr
+@@ -15,7 +15,7 @@ struct Video
+   # NOTE: don't forget to bump this number if any change is made to
+   # the `params` structure in videos/parser.cr!!!
+   #
+-  SCHEMA_VERSION = 2
++  SCHEMA_VERSION = 3
+ 
+   property id : String
+ 
+@@ -192,8 +192,8 @@ struct Video
+     }
+   end
+ 
+-  def invidious_companion : Hash(String, JSON::Any)
+-    info["invidiousCompanion"].try &.as_h
++  def invidious_companion : Hash(String, JSON::Any)?
++    info["invidiousCompanion"]?.try &.as_h
+   end
+ 
+   # Macros defining getters/setters for various types of data
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 28f3ea41f..24729beb5 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -100,7 +100,7 @@ def extract_video_info(video_id : String)
+   params = parse_video_info(video_id, player_response)
+   params["reason"] = JSON::Any.new(reason) if reason
+ 
+-  if CONFIG.invidious_companion.nil?
++  if !CONFIG.invidious_companion.empty?
+     new_player_response = nil
+ 
+     # Don't use Android test suite client if po_token is passed because po_token doesn't
+@@ -126,7 +126,7 @@ def extract_video_info(video_id : String)
+     end
+   end
+ 
+-  {"captions", "playabilityStatus", "playerConfig", "storyboards"}.each do |f|
++  {"captions", "playabilityStatus", "playerConfig", "storyboards", "invidiousCompanion"}.each do |f|
+     params[f] = player_response[f] if player_response[f]?
+   end
+ 
+@@ -141,10 +141,6 @@ def extract_video_info(video_id : String)
+     params["streamingData"] = streaming_data
+   end
+ 
+-  if CONFIG.invidious_companion
+-    params["invidiousCompanion"] = player_response["invidiousCompanion"]
+-  end
+-
+   # Data structure version, for cache control
+   params["version"] = JSON::Any.new(Video::SCHEMA_VERSION.to_i64)
+ 
+@@ -453,12 +449,11 @@ def parse_video_info(video_id : String, player_response : Hash(String, JSON::Any
+     # Music section
+     "music" => JSON.parse(music_list.to_json),
+     # Author infos
+-    "author"             => JSON::Any.new(author || ""),
+-    "ucid"               => JSON::Any.new(ucid || ""),
+-    "authorThumbnail"    => JSON::Any.new(author_thumbnail.try &.as_s || ""),
+-    "authorVerified"     => JSON::Any.new(author_verified || false),
+-    "subCountText"       => JSON::Any.new(subs_text || "-"),
+-    "invidiousCompanion" => JSON::Any.new(subs_text),
++    "author"          => JSON::Any.new(author || ""),
++    "ucid"            => JSON::Any.new(ucid || ""),
++    "authorThumbnail" => JSON::Any.new(author_thumbnail.try &.as_s || ""),
++    "authorVerified"  => JSON::Any.new(author_verified || false),
++    "subCountText"    => JSON::Any.new(subs_text || "-"),
+   }
+ 
+   return params
+diff --git a/src/invidious/views/components/player.ecr b/src/invidious/views/components/player.ecr
+index 017b34625..59f432391 100644
+--- a/src/invidious/views/components/player.ecr
++++ b/src/invidious/views/components/player.ecr
+@@ -22,7 +22,7 @@
+                audio_streams.each_with_index do |fmt, i|
+                 src_url  = "/latest_version?id=#{video.id}&itag=#{fmt["itag"]}"
+                 src_url += "&local=true" if params.local
+-                src_url = video.invidious_companion["baseUrl"].as_s + src_url if (CONFIG.invidious_companion && params.local)
++                src_url = video.invidious_companion.not_nil!["baseUrl"].as_s + src_url if (!CONFIG.invidious_companion.empty? && params.local)
+ 
+                 bitrate = fmt["bitrate"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+@@ -37,7 +37,7 @@
+         <% else %>
+             <% if params.quality == "dash"
+                src_url = "/api/manifest/dash/id/" + video.id + "?local=true&unique_res=1"
+-               src_url = video.invidious_companion["baseUrl"].as_s + src_url if (CONFIG.invidious_companion)
++               src_url = video.invidious_companion.not_nil!["baseUrl"].as_s + src_url if (!CONFIG.invidious_companion.empty?)
+             %>
+                 <source src="<%= src_url %>" type='application/dash+xml' label="dash">
+             <% end %>
+@@ -48,7 +48,7 @@
+             fmt_stream.each_with_index do |fmt, i|
+                 src_url  = "/latest_version?id=#{video.id}&itag=#{fmt["itag"]}"
+                 src_url += "&local=true" if params.local
+-                src_url = video.invidious_companion["baseUrl"].as_s + src_url if (CONFIG.invidious_companion && params.local)
++                src_url = video.invidious_companion.not_nil!["baseUrl"].as_s + src_url if (!CONFIG.invidious_companion.empty? && params.local)
+ 
+                 quality = fmt["quality"]
+                 mimetype = HTML.escape(fmt["mimeType"].as_s)
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 68abcf48d..6a0e50a1f 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -500,7 +500,11 @@ module YoutubeAPI
+       data["params"] = params
+     end
+ 
+-    return self._post_json("/youtubei/v1/player", data, client_config)
++    if !CONFIG.invidious_companion.empty?
++      return self._post_invidious_companion("/youtubei/v1/player", data)
++    else
++      return self._post_json("/youtubei/v1/player", data, client_config)
++    end
+   end
+ 
+   ####################################################################
+@@ -615,19 +619,12 @@ module YoutubeAPI
+ 
+     headers = HTTP::Headers{
+       "Content-Type"              => "application/json; charset=UTF-8",
++      "Accept-Encoding"           => "gzip, deflate",
+       "x-goog-api-format-version" => "2",
+       "x-youtube-client-name"     => client_config.name_proto,
+       "x-youtube-client-version"  => client_config.version,
+     }
+ 
+-    if CONFIG.invidious_companion && endpoint == "/youtubei/v1/player"
+-      headers["Authorization"] = "Bearer " + CONFIG.hmac_key
+-    end
+-
+-    if !CONFIG.invidious_companion
+-      headers["Accept-Encoding"] = "gzip, deflate"
+-    end
+-
+     if user_agent = client_config.user_agent
+       headers["User-Agent"] = user_agent
+     end
+@@ -641,37 +638,18 @@ module YoutubeAPI
+     LOGGER.trace("YoutubeAPI: ClientConfig: #{client_config}")
+     LOGGER.trace("YoutubeAPI: POST data: #{data}")
+ 
+-    invidious_companion_urls = CONFIG.invidious_companion
+-
+     # Send the POST request
+-    if invidious_companion_urls && endpoint == "/youtubei/v1/player"
+-      begin
+-        invidious_companion_response = make_client(URI.parse(invidious_companion_urls.sample),
+-          &.post(endpoint, headers: headers, body: data.to_json))
+-        body = invidious_companion_response.body
+-        if (invidious_companion_response.status_code != 200)
+-          raise Exception.new("status code: " + invidious_companion_response.status_code.to_s + " and body: " + body)
+-        end
+-      rescue ex
+-        raise InfoException.new("Error while communicating with Invidious companion: " + (ex.message || "no extra info found"))
+-      end
+-    else
+-      body = YT_POOL.client() do |client|
+-        client.post(url, headers: headers, body: data.to_json) do |response|
+-          if response.status_code != 200
+-            raise InfoException.new("Error: non 200 status code. Youtube API returned \
+-              status code #{response.status_code}. See <a href=\"https://docs.invidious.io/youtube-errors-explained/\"> \
+-              https://docs.invidious.io/youtube-errors-explained/</a> for troubleshooting.")
+-          end
+-          self._decompress(response.body_io, response.headers["Content-Encoding"]?)
++    body = YT_POOL.client() do |client|
++      client.post(url, headers: headers, body: data.to_json) do |response|
++        if response.status_code != 200
++          raise InfoException.new("Error: non 200 status code. Youtube API returned \
++            status code #{response.status_code}. See <a href=\"https://docs.invidious.io/youtube-errors-explained/\"> \
++            https://docs.invidious.io/youtube-errors-explained/</a> for troubleshooting.")
+         end
++        self._decompress(response.body_io, response.headers["Content-Encoding"]?)
+       end
+     end
+ 
+-    if body.nil? && CONFIG.invidious_companion
+-      raise InfoException.new("Error while communicating with Invidious companion: no response data.")
+-    end
+-
+     # Convert result to Hash
+     initial_data = JSON.parse(body).as_h
+ 
+@@ -692,6 +670,53 @@ module YoutubeAPI
+     return initial_data
+   end
+ 
++  ####################################################################
++  # _post_invidious_companion(endpoint, data)
++  #
++  # Internal function that does the actual request to Invidious companion
++  # and handles errors.
++  #
++  # The requested data is an endpoint (URL without the domain part)
++  # and the data as a Hash object.
++  #
++  def _post_invidious_companion(
++    endpoint : String,
++    data : Hash
++  ) : Hash(String, JSON::Any)
++    headers = HTTP::Headers{
++      "Content-Type"    => "application/json; charset=UTF-8",
++      "Accept-Encoding" => "gzip",
++      "Authorization"   => "Bearer " + CONFIG.invidious_companion_key,
++    }
++
++    # Logging
++    LOGGER.debug("Invidious companion: Using endpoint: \"#{endpoint}\"")
++    LOGGER.trace("Invidious companion: POST data: #{data}")
++
++    # Send the POST request
++
++    begin
++      response = make_client(CONFIG.invidious_companion.sample,
++        &.post(endpoint, headers: headers, body: data.to_json))
++      body = self._decompress(response.body_io, response.headers["Content-Encoding"]?)
++      if (response.status_code != 200)
++        raise Exception.new("Error while communicating with Invidious companion: \
++                              status code: " + response.status_code.to_s + " and body: " + body)
++      end
++    rescue ex
++      raise InfoException.new("Error while communicating with Invidious companion: " + (ex.message || "no extra info found"))
++    end
++
++    if body.nil?
++      raise InfoException.new("Error while communicating with Invidious companion: no response data.")
++    end
++
++    # Convert result to Hash
++    initial_data = JSON.parse(body).as_h
++
++    return initial_data
++  end
++
+   ####################################################################
+   # _decompress(body_io, headers)
+   #
+
+From 9f846127aea9b4f392acb062d662fff2cc58d1d0 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sat, 16 Nov 2024 22:38:00 +0100
+Subject: [PATCH 11/15] fixing "end" misplacement
+
+---
+ src/invidious/videos/parser.cr | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 24729beb5..7a73be682 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -123,7 +123,6 @@ def extract_video_info(video_id : String)
+         player_response = new_player_response
+         params.delete("reason")
+       end
+-    end
+   end
+ 
+   {"captions", "playabilityStatus", "playerConfig", "storyboards", "invidiousCompanion"}.each do |f|
+
+From b51770dbdbdcca04d04849d37e5f11ce20948c73 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sat, 16 Nov 2024 23:00:48 +0100
+Subject: [PATCH 12/15] fix linting + use .empty?
+
+---
+ src/invidious/config.cr        | 2 +-
+ src/invidious/videos/parser.cr | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 29f4b60c8..4b06ff838 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -257,7 +257,7 @@ class Config
+         puts "Config: You can not run inv_sig_helper and invidious_companion at the same time."
+         exit(1)
+       end
+-      if !CONFIG.invidious_companion_key
++      if CONFIG.invidious_companion_key.empty?
+         puts "Config: Please configure a key if you are using invidious companion."
+         exit(1)
+       elsif CONFIG.invidious_companion_key == "CHANGE_ME!!"
+diff --git a/src/invidious/videos/parser.cr b/src/invidious/videos/parser.cr
+index 7a73be682..4d0e0378a 100644
+--- a/src/invidious/videos/parser.cr
++++ b/src/invidious/videos/parser.cr
+@@ -120,9 +120,9 @@ def extract_video_info(video_id : String)
+       new_player_response["storyboards"] = player_response["storyboards"] if player_response["storyboards"]?
+       new_player_response["captions"] = player_response["captions"] if player_response["captions"]?
+ 
+-        player_response = new_player_response
+-        params.delete("reason")
+-      end
++      player_response = new_player_response
++      params.delete("reason")
++    end
+   end
+ 
+   {"captions", "playabilityStatus", "playerConfig", "storyboards", "invidiousCompanion"}.each do |f|
+
+From bb2e3b2a3e5f53610b9dd602f8507303ec641450 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sun, 17 Nov 2024 12:26:35 +0100
+Subject: [PATCH 13/15] crystal handle decompression already by itself
+
+---
+ src/invidious/config.cr                 | 8 ++++----
+ src/invidious/yt_backend/youtube_api.cr | 3 +--
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/src/invidious/config.cr b/src/invidious/config.cr
+index 4b06ff838..20268ed1f 100644
+--- a/src/invidious/config.cr
++++ b/src/invidious/config.cr
+@@ -251,16 +251,16 @@ class Config
+         end
+     {% end %}
+ 
+-    if !CONFIG.invidious_companion.empty?
++    if !config.invidious_companion.empty?
+       # invidious_companion and signature_server can't work together
+-      if CONFIG.signature_server
++      if config.signature_server
+         puts "Config: You can not run inv_sig_helper and invidious_companion at the same time."
+         exit(1)
+       end
+-      if CONFIG.invidious_companion_key.empty?
++      if config.invidious_companion_key.empty?
+         puts "Config: Please configure a key if you are using invidious companion."
+         exit(1)
+-      elsif CONFIG.invidious_companion_key == "CHANGE_ME!!"
++      elsif config.invidious_companion_key == "CHANGE_ME!!"
+         puts "Config: The value of 'invidious_companion_key' needs to be changed!!"
+         exit(1)
+       end
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 6a0e50a1f..8fef84724 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -685,7 +685,6 @@ module YoutubeAPI
+   ) : Hash(String, JSON::Any)
+     headers = HTTP::Headers{
+       "Content-Type"    => "application/json; charset=UTF-8",
+-      "Accept-Encoding" => "gzip",
+       "Authorization"   => "Bearer " + CONFIG.invidious_companion_key,
+     }
+ 
+@@ -698,7 +697,7 @@ module YoutubeAPI
+     begin
+       response = make_client(CONFIG.invidious_companion.sample,
+         &.post(endpoint, headers: headers, body: data.to_json))
+-      body = self._decompress(response.body_io, response.headers["Content-Encoding"]?)
++      body = response.body
+       if (response.status_code != 200)
+         raise Exception.new("Error while communicating with Invidious companion: \
+                               status code: " + response.status_code.to_s + " and body: " + body)
+
+From 734e72503f88f9741279ab385e86f5d2b340c71b Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Sun, 17 Nov 2024 19:18:29 +0100
+Subject: [PATCH 14/15] fix download function when invidious companion used
+
+---
+ src/invidious/routes/video_playback.cr |  5 +----
+ src/invidious/routes/watch.cr          | 11 +++++++++--
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/src/invidious/routes/video_playback.cr b/src/invidious/routes/video_playback.cr
+index 17b1022a8..405e733b3 100644
+--- a/src/invidious/routes/video_playback.cr
++++ b/src/invidious/routes/video_playback.cr
+@@ -253,7 +253,7 @@ module Invidious::Routes::VideoPlayback
+   # YouTube /videoplayback links expire after 6 hours,
+   # so we have a mechanism here to redirect to the latest version
+   def self.latest_version(env)
+-    if !CONFIG.invidious_companion.empty? && CONFIG.disabled?("downloads")
++    if !CONFIG.invidious_companion.empty?
+       return error_template(403, "This endpoint is not permitted because it is handled by Invidious companion.")
+     end
+ 
+@@ -298,9 +298,6 @@ module Invidious::Routes::VideoPlayback
+     end
+ 
+     if local
+-      if (!CONFIG.invidious_companion.empty?)
+-        return env.redirect "#{video.invidious_companion.not_nil!["baseUrl"].as_s}#{env.request.path}?#{env.request.query}"
+-      end
+       url = URI.parse(url).request_target.not_nil!
+       url += "&title=#{URI.encode_www_form(title, space_to_plus: false)}" if title
+     end
+diff --git a/src/invidious/routes/watch.cr b/src/invidious/routes/watch.cr
+index 69780d78b..740a15b2e 100644
+--- a/src/invidious/routes/watch.cr
++++ b/src/invidious/routes/watch.cr
+@@ -328,13 +328,20 @@ module Invidious::Routes::Watch
+ 
+       return Invidious::Routes::API::V1::Videos.captions(env)
+     elsif itag = download_widget["itag"]?.try &.as_i
++      itag = itag.to_s
++
+       # URL params specific to /latest_version
+       env.params.query["id"] = video_id
+-      env.params.query["itag"] = itag.to_s
++      env.params.query["itag"] = itag
+       env.params.query["title"] = filename
+       env.params.query["local"] = "true"
+ 
+-      return Invidious::Routes::VideoPlayback.latest_version(env)
++      if (!CONFIG.invidious_companion.empty?)
++        video = get_video(video_id)
++        return env.redirect "#{video.invidious_companion.not_nil!["baseUrl"].as_s}/latest_version?id=#{video_id}&itag=#{itag}&local=true"
++      else
++        return Invidious::Routes::VideoPlayback.latest_version(env)
++      end
+     else
+       return error_template(400, "Invalid label or itag")
+     end
+
+From 1f51edd0b915ca64df7f195aa271f74c7ef093cb Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Mon, 18 Nov 2024 12:22:23 +0100
+Subject: [PATCH 15/15] fix linting
+
+---
+ src/invidious/yt_backend/youtube_api.cr | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/invidious/yt_backend/youtube_api.cr b/src/invidious/yt_backend/youtube_api.cr
+index 8fef84724..09f0936fd 100644
+--- a/src/invidious/yt_backend/youtube_api.cr
++++ b/src/invidious/yt_backend/youtube_api.cr
+@@ -684,8 +684,8 @@ module YoutubeAPI
+     data : Hash
+   ) : Hash(String, JSON::Any)
+     headers = HTTP::Headers{
+-      "Content-Type"    => "application/json; charset=UTF-8",
+-      "Authorization"   => "Bearer " + CONFIG.invidious_companion_key,
++      "Content-Type"  => "application/json; charset=UTF-8",
++      "Authorization" => "Bearer " + CONFIG.invidious_companion_key,
+     }
+ 
+     # Logging
