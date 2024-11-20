@@ -1,0 +1,29 @@
+From 95576555d18669521799289f990aeeaa7cc72220 Mon Sep 17 00:00:00 2001
+From: Emilien <4016501+unixfox@users.noreply.github.com>
+Date: Wed, 20 Nov 2024 15:21:45 +0100
+Subject: [PATCH] send query string instead of range http header
+
+---
+ assets/js/player.js | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/assets/js/player.js b/assets/js/player.js
+index 353a52963..e89232aa4 100644
+--- a/assets/js/player.js
++++ b/assets/js/player.js
+@@ -42,6 +42,15 @@ embed_url = location.origin + '/embed/' + video_data.id + embed_url.search;
+ var save_player_pos_key = 'save_player_pos';
+ 
+ videojs.Vhs.xhr.beforeRequest = function(options) {
++    if (options.uri.includes("videoplayback")) {
++        if (options.headers) {
++            if (options.headers.Range) {
++                options.uri += `&range=${options.headers.Range.split('=')[1]}`
++                delete options.headers.range
++            }
++        }
++    }
++
+     // set local if requested not videoplayback
+     if (!options.uri.includes('videoplayback')) {
+         if (!options.uri.includes('local=true'))
