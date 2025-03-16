@@ -15,14 +15,9 @@ jobs:
 
   build:
 
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-24.04-arm'
 
     steps:
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-      if: github.event_name != 'push'
-      with:
-        platforms: arm64
     - name: Check Out Repo
       uses: actions/checkout@v3
 
