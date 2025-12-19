@@ -53,8 +53,8 @@ jobs:
       id: docker_build_new
       uses: docker/build-push-action@v3
       with:
-        context: ./
-        file: ./Dockerfile.new
+        context: ./invidious
+        file: ./invidious/docker/Dockerfile.arm64
         build-args: |
             release=1
         platforms: linux/arm64/v8
