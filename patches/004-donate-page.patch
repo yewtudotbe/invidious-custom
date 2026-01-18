@@ -56,7 +56,7 @@ new file mode 100644
 index 00000000..0c7deecc
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +<% content_for "header" do %>
 +<title>Donate - Invidious</title>
 +<% end %>
@@ -76,6 +76,7 @@ index 00000000..0c7deecc
 +    <h4>Cryptocurrency</h4>
 +    <ul>
 +        <li>Bitcoin: <a href="bitcoin:1fyoJKdFo5cDPt21CGHW2RDQtcktQU9cL">1fyoJKdFo5cDPt21CGHW2RDQtcktQU9cL</a> (Segwit compatible)</li>
++        <li>Bitcoin Lightning network: lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhhxmr0wanxzargv4erqvpkpypheh or slowfather006@walletofsatoshi.com</li>
 +        <li>Bitcoin cash: <a href="bitcoincash:qz6qvjt9m4wqrqhyet3v3gljrpnys3wl2yxz0jfuu2">qz6qvjt9m4wqrqhyet3v3gljrpnys3wl2yxz0jfuu2</a></li>
 +        <li>Ethereum: <a href="ethereum:0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB">0x52B72e00be486C03C9b09AA0D441ADE1EfA5d2CB</a> (you can send any ERC20 token)</li>
 +        <li>Monero: <a href="monero:82VziQe69ynRNKZ2Bk7XcoYUA6Q1eRuPyGxV3gVWDju7EPkUXZE2oGTGWiah51cCKRMAmwTY11D6qcH3NpGtfdjcNccmXL5">82VziQe69ynRNKZ2Bk7XcoYUA6Q1eRuPyGxV3gVWDju7EPkUXZE2oGTGWiah51cCKRMAmwTY11D6qcH3NpGtfdjcNccmXL5</a></li>
