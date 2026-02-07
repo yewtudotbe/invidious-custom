@@ -1,19 +1,19 @@
-From 4080a8fcc86b28d17abb94b751a3f8f98b4fd030 Mon Sep 17 00:00:00 2001
+From 1a79ae49ad0cc8843aed1f0ee688214f3541a743 Mon Sep 17 00:00:00 2001
 From: Your Name <you@example.com>
-Date: Fri, 5 Sep 2025 08:32:36 +0000
+Date: Sat, 7 Feb 2026 11:58:12 +0000
 Subject: [PATCH] use redis for video cache
 
 ---
- shard.lock                       |  8 ++++++++
+ shard.lock                       |  9 ++++++++-
  shard.yml                        |  2 ++
  src/invidious.cr                 |  6 ++++++
  src/invidious/config.cr          |  3 +++
- src/invidious/database/videos.cr | 14 +++++++++++++-
+ src/invidious/database/videos.cr | 16 +++++++++++++++-
  src/invidious/videos.cr          |  2 +-
- 6 files changed, 33 insertions(+), 2 deletions(-)
+ 6 files changed, 35 insertions(+), 3 deletions(-)
 
 diff --git a/shard.lock b/shard.lock
-index 1265eda6..c210a465 100644
+index 1265eda..65442d3 100644
 --- a/shard.lock
 +++ b/shard.lock
 @@ -32,6 +32,10 @@ shards:
@@ -38,11 +38,16 @@ index 1265eda6..c210a465 100644
    spectator:
      git: https://github.com/icy-arctic-fox/spectator.git
      version: 0.10.6
+@@ -47,4 +55,3 @@ shards:
+   sqlite3:
+     git: https://github.com/crystal-lang/crystal-sqlite3.git
+     version: 0.21.0
+-
 diff --git a/shard.yml b/shard.yml
-index 839ebca5..288fbf49 100644
+index dde1851..3671b10 100644
 --- a/shard.yml
 +++ b/shard.yml
-@@ -27,6 +27,8 @@ dependencies:
+@@ -31,6 +31,8 @@ dependencies:
    http_proxy:
      github: mamantoha/http_proxy
      version: ~> 0.10.3
@@ -52,7 +57,7 @@ index 839ebca5..288fbf49 100644
  development_dependencies:
    spectator:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 197b150c..0f8df4ce 100644
+index d7c5b80..c528bae 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -30,6 +30,7 @@ require "xml"
@@ -72,14 +77,14 @@ index 197b150c..0f8df4ce 100644
 +if REDIS_DB.ping
 +  puts "Connected to redis"
 +end
- ARCHIVE_URL = URI.parse("https://archive.org")
- PUBSUB_URL  = URI.parse("https://pubsubhubbub.appspot.com")
- REDDIT_URL  = URI.parse("https://www.reddit.com")
+ HOST_URL           = make_host_url(Kemal.config)
+ MAX_ITEMS_PER_PAGE = 1500
+ 
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 4d69854c..d8a07fcf 100644
+index 7853d9a..b263ea5 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -106,6 +106,9 @@ class Config
+@@ -111,6 +111,9 @@ class Config
    # Used for crawling channels: threads should check all videos uploaded by a channel
    property full_refresh : Bool = false
  
@@ -90,7 +95,7 @@ index 4d69854c..d8a07fcf 100644
    property jobs = Invidious::Jobs::JobsConfig.new
  
 diff --git a/src/invidious/database/videos.cr b/src/invidious/database/videos.cr
-index 695f5b33..0572518b 100644
+index 695f5b3..4baf1c4 100644
 --- a/src/invidious/database/videos.cr
 +++ b/src/invidious/database/videos.cr
 @@ -11,6 +11,8 @@ module Invidious::Database::Videos
@@ -111,7 +116,16 @@ index 695f5b33..0572518b 100644
    end
  
    def delete_expired
-@@ -47,6 +51,14 @@ module Invidious::Database::Videos
+@@ -39,6 +43,8 @@ module Invidious::Database::Videos
+     SQL
+ 
+     PG_DB.exec(request, video.id, video.info.to_json, video.updated)
++    REDIS_DB.set(video.id, video.info.to_json, ex: 3600)
++    REDIS_DB.set(video.id + ":time", video.updated, ex: 3600)
+   end
+ 
+   def select(id : String) : Video?
+@@ -47,6 +53,14 @@ module Invidious::Database::Videos
        WHERE id = $1
      SQL
  
@@ -128,7 +142,7 @@ index 695f5b33..0572518b 100644
    end
  end
 diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
-index 348a0a66..4936c63e 100644
+index 0446922..2869b42 100644
 --- a/src/invidious/videos.cr
 +++ b/src/invidious/videos.cr
 @@ -305,7 +305,7 @@ def get_video(id, refresh = true, region = nil, force_refresh = false)
@@ -141,5 +155,5 @@ index 348a0a66..4936c63e 100644
          Invidious::Database::Videos.delete(id)
          raise ex
 -- 
-2.51.0
+2.52.0
 
