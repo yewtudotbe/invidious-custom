@@ -1,16 +1,62 @@
-From 166f2108c81a0569427b5fa53c532655418e3e65 Mon Sep 17 00:00:00 2001
+From 1bf184c5f940abbfe18256e345dd3c0d43d2aa7a Mon Sep 17 00:00:00 2001
 From: Your Name <you@example.com>
 Date: Sat, 7 Feb 2026 10:57:40 +0000
 Subject: [PATCH] use redis for video cache
 
 ---
+ shard.lock                       | 14 +++++++++++---
  shard.yml                        |  2 ++
  src/invidious.cr                 |  6 ++++++
  src/invidious/config.cr          |  3 +++
  src/invidious/database/videos.cr | 16 +++++++++++++++-
  src/invidious/videos.cr          |  2 +-
- 5 files changed, 27 insertions(+), 2 deletions(-)
+ 6 files changed, 38 insertions(+), 5 deletions(-)
 
+diff --git a/shard.lock b/shard.lock
+index 1265eda..2795e5e 100644
+--- a/shard.lock
++++ b/shard.lock
+@@ -2,15 +2,15 @@ version: 2.0
+ shards:
+   ameba:
+     git: https://github.com/crystal-ameba/ameba.git
+-    version: 1.6.1
++    version: 1.6.4
+ 
+   athena-negotiation:
+     git: https://github.com/athena-framework/negotiation.git
+-    version: 0.1.1
++    version: 0.1.5
+ 
+   backtracer:
+     git: https://github.com/sija/backtracer.cr.git
+-    version: 1.2.2
++    version: 1.2.4
+ 
+   db:
+     git: https://github.com/crystal-lang/crystal-db.git
+@@ -32,6 +32,10 @@ shards:
+     git: https://github.com/will/crystal-pg.git
+     version: 0.28.0
+ 
++  pool:
++    git: https://github.com/ysbaddaden/pool.git
++    version: 0.2.4
++
+   protodec:
+     git: https://github.com/iv-org/protodec.git
+     version: 0.1.5
+@@ -40,6 +44,10 @@ shards:
+     git: https://github.com/luislavena/radix.git
+     version: 0.4.1
+ 
++  redis:
++    git: https://github.com/stefanwille/crystal-redis.git
++    version: 2.9.1
++
+   spectator:
+     git: https://github.com/icy-arctic-fox/spectator.git
+     version: 0.10.6
 diff --git a/shard.yml b/shard.yml
 index dde1851..3671b10 100644
 --- a/shard.yml
