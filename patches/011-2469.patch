@@ -1,4 +1,4 @@
-From e476dbe25baddcbfd5ee61d27c706e16e7771f68 Mon Sep 17 00:00:00 2001
+From 47ce8a726b0bb4196c211a3f22eb9a7721d8e6ab Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Wed, 26 Jul 2023 15:43:43 +0200
 Subject: [PATCH] limit feeds and delete materialized views
@@ -21,7 +21,7 @@ Subject: [PATCH] limit feeds and delete materialized views
 
 diff --git a/config/migrate-scripts/migrate-db-8bc91ce.sh b/config/migrate-scripts/migrate-db-8bc91ce.sh
 new file mode 100644
-index 000000000..04388175e
+index 0000000000..04388175e8
 --- /dev/null
 +++ b/config/migrate-scripts/migrate-db-8bc91ce.sh
 @@ -0,0 +1,6 @@
@@ -33,7 +33,7 @@ index 000000000..04388175e
 +DROP INDEX channel_videos_ucid_idx;
 \ No newline at end of file
 diff --git a/config/sql/channel_videos.sql b/config/sql/channel_videos.sql
-index cd4e0ffdb..f2ac4876c 100644
+index cd4e0ffdb3..f2ac4876c4 100644
 --- a/config/sql/channel_videos.sql
 +++ b/config/sql/channel_videos.sql
 @@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS public.channel_videos
@@ -55,7 +55,7 @@ index cd4e0ffdb..f2ac4876c 100644
  
 diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
 new file mode 100644
-index 000000000..17d69b5d7
+index 0000000000..17d69b5d7e
 --- /dev/null
 +++ b/kubernetes/values.yaml
 @@ -0,0 +1,60 @@
@@ -120,10 +120,10 @@ index 000000000..17d69b5d7
 +  https_only: false
 +  domain:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 3804197e3..961ae8721 100644
+index d7c5b80b07..7c6b39c380 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -103,14 +103,6 @@ Kemal.config.extra_options do |parser|
+@@ -107,14 +107,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -138,7 +138,7 @@ index 3804197e3..961ae8721 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -168,10 +160,6 @@ if CONFIG.channel_threads > 0
+@@ -166,10 +158,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -150,10 +150,10 @@ index 3804197e3..961ae8721 100644
    Invidious::Jobs.register Invidious::Jobs::StatisticsRefreshJob.new(PG_DB, SOFTWARE)
  end
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index c4ddcdb36..2e6df47a1 100644
+index af76bb8eaa..9cdb2235f3 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
-@@ -62,8 +62,6 @@ class Config
+@@ -95,8 +95,6 @@ class Config
    # Time interval between two executions of the job that crawls channel videos (subscriptions update).
    @[YAML::Field(converter: Preferences::TimeSpanConverter)]
    property channel_refresh_interval : Time::Span = 30.minutes
@@ -164,7 +164,7 @@ index c4ddcdb36..2e6df47a1 100644
    # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
 diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
 deleted file mode 100644
-index 4f8130dfd..000000000
+index 4f8130dfd0..0000000000
 --- a/src/invidious/jobs/refresh_feeds_job.cr
 +++ /dev/null
 @@ -1,75 +0,0 @@
@@ -244,7 +244,7 @@ index 4f8130dfd..000000000
 -  end
 -end
 diff --git a/src/invidious/routes/account.cr b/src/invidious/routes/account.cr
-index dd65e7a60..8086a54e5 100644
+index c8db207c2a..705924db22 100644
 --- a/src/invidious/routes/account.cr
 +++ b/src/invidious/routes/account.cr
 @@ -123,10 +123,8 @@ module Invidious::Routes::Account
@@ -259,21 +259,21 @@ index dd65e7a60..8086a54e5 100644
      env.request.cookies.each do |cookie|
        cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index d0f7ac229..add9f75d3 100644
+index 7d7da48794..51f8f9a38b 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
-@@ -160,9 +160,6 @@ module Invidious::Routes::Login
+@@ -125,9 +125,6 @@ module Invidious::Routes::Login
          Invidious::Database::Users.insert(user)
          Invidious::Database::SessionIDs.insert(sid, email)
  
 -        view_name = "subscriptions_#{sha256(user.email)}"
 -        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
 -
-         env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.domain, sid)
- 
-         if env.request.cookies["PREFS"]?
+         if alt = CONFIG.alternative_domains.index(host)
+           env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.alternative_domains[alt], sid)
+         else
 diff --git a/src/invidious/search/processors.cr b/src/invidious/search/processors.cr
-index 25edb9362..10b81c59e 100644
+index ecf9aeb315..94f01c6c23 100644
 --- a/src/invidious/search/processors.cr
 +++ b/src/invidious/search/processors.cr
 @@ -37,18 +37,18 @@ module Invidious::Search
@@ -305,7 +305,7 @@ index 25edb9362..10b81c59e 100644
        )
      end
 diff --git a/src/invidious/users.cr b/src/invidious/users.cr
-index 65566d207..0b2d1ef5f 100644
+index 65566d2074..0b2d1ef5fa 100644
 --- a/src/invidious/users.cr
 +++ b/src/invidious/users.cr
 @@ -27,7 +27,6 @@ def get_subscription_feed(user, max_results = 40, page = 1)
