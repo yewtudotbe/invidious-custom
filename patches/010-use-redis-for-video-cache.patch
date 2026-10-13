@@ -37,7 +37,7 @@ index 1265eda..65442d3 100644
 +
    spectator:
      git: https://github.com/icy-arctic-fox/spectator.git
-     version: 0.10.6
+     version: 0.12.4
 @@ -47,4 +55,3 @@ shards:
    sqlite3:
      git: https://github.com/crystal-lang/crystal-sqlite3.git
