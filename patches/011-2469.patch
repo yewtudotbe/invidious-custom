@@ -1,7 +1,7 @@
-From d38f00efe01d793954c22643182a41599c1c5ccd Mon Sep 17 00:00:00 2001
+From 78fdaf5d9579e6cbace4a590ff2d854480aa6a1d Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Wed, 26 Jul 2023 15:43:43 +0200
-Subject: [PATCH] limit feeds and delete materialized views
+Subject: [PATCH 3/6] limit feeds and delete materialized views
 
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
@@ -13,8 +13,8 @@ Subject: [PATCH] limit feeds and delete materialized views
  src/invidious/routes/account.cr              |  2 -
  src/invidious/routes/login.cr                |  3 -
  src/invidious/search/processors.cr           | 18 ++---
- src/invidious/users.cr                       | 29 ++++++--
- 10 files changed, 101 insertions(+), 114 deletions(-)
+ src/invidious/user/users.cr                  | 27 +++++--
+ 10 files changed, 99 insertions(+), 114 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
  create mode 100644 kubernetes/values.yaml
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
@@ -120,10 +120,10 @@ index 00000000..17d69b5d
 +  https_only: false
 +  domain:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index d05ddf75..0a284e02 100644
+index 859dea74..b19f2f50 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -134,14 +134,6 @@ Kemal.config.extra_options do |parser|
+@@ -136,14 +136,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -138,7 +138,7 @@ index d05ddf75..0a284e02 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -193,10 +185,6 @@ if CONFIG.channel_threads > 0
+@@ -195,10 +187,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -150,7 +150,7 @@ index d05ddf75..0a284e02 100644
    Invidious::Jobs.register Invidious::Jobs::StatisticsRefreshJob.new(PG_DB, SOFTWARE)
  end
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index aadad54b..63853fae 100644
+index 96c2ed73..74ee3607 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -101,8 +101,6 @@ class Config
@@ -164,7 +164,7 @@ index aadad54b..63853fae 100644
    # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
 diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
 deleted file mode 100644
-index 4f8130df..00000000
+index dfb93ebf..00000000
 --- a/src/invidious/jobs/refresh_feeds_job.cr
 +++ /dev/null
 @@ -1,75 +0,0 @@
@@ -224,7 +224,7 @@ index 4f8130df..00000000
 -                  # While iterating through, we may have an email stored from a deleted account
 -                  if db.query_one?("SELECT true FROM users WHERE email = $1", email, as: Bool)
 -                    LOGGER.info("RefreshFeedsJob: CREATE #{view_name}")
--                    db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(email)}")
+-                    db.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{Invidious::User::Users::MATERIALIZED_VIEW_SQL.call(email)}")
 -                    db.exec("UPDATE users SET feed_needs_update = false WHERE email = $1", email)
 -                  end
 -                rescue ex
@@ -244,11 +244,11 @@ index 4f8130df..00000000
 -  end
 -end
 diff --git a/src/invidious/routes/account.cr b/src/invidious/routes/account.cr
-index c8db207c..705924db 100644
+index 5028fc8f..c06cbeca 100644
 --- a/src/invidious/routes/account.cr
 +++ b/src/invidious/routes/account.cr
 @@ -123,10 +123,8 @@ module Invidious::Routes::Account
-       return error_template(400, ex)
+       return Errors.error_template(400, ex)
      end
  
 -    view_name = "subscriptions_#{sha256(user.email)}"
@@ -259,7 +259,7 @@ index c8db207c..705924db 100644
      env.request.cookies.each do |cookie|
        cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index 21b43be8..284aec50 100644
+index 08fe9a8b..9fd663aa 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
 @@ -125,9 +125,6 @@ module Invidious::Routes::Login
@@ -267,102 +267,100 @@ index 21b43be8..284aec50 100644
          Invidious::Database::SessionIDs.insert(sid, email)
  
 -        view_name = "subscriptions_#{sha256(user.email)}"
--        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{MATERIALIZED_VIEW_SQL.call(user.email)}")
+-        PG_DB.exec("CREATE MATERIALIZED VIEW #{view_name} AS #{Invidious::User::Users::MATERIALIZED_VIEW_SQL.call(user.email)}")
 -
          if alt = CONFIG.alternative_domains.index(host)
            env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.alternative_domains[alt], sid)
          else
 diff --git a/src/invidious/search/processors.cr b/src/invidious/search/processors.cr
-index 0fc32363..0b43007f 100644
+index b39777f4..4aec650d 100644
 --- a/src/invidious/search/processors.cr
 +++ b/src/invidious/search/processors.cr
-@@ -37,19 +37,19 @@ module Invidious::Search
+@@ -36,19 +36,19 @@ module Invidious::Search::Processors
  
-     # Search inside of user subscriptions
-     def subscriptions(query : Query, user : Invidious::User) : Array(ChannelVideo)
--      view_name = "subscriptions_#{sha256(user.email)}"
+   # Search inside of user subscriptions
+   def subscriptions(query : Query, user : Invidious::User) : Array(ChannelVideo)
+-    view_name = "subscriptions_#{sha256(user.email)}"
 -
-       return PG_DB.query_all(<<-SQL,
-         SELECT id,title,published,updated,ucid,author,length_seconds
-         FROM (
--          SELECT *,
--          to_tsvector(#{view_name}.title) ||
--          to_tsvector(#{view_name}.author)
--          as document
--          FROM #{view_name}
--        ) v_search WHERE v_search.document @@ plainto_tsquery($1) LIMIT 20 OFFSET $2;
-+          SELECT cv.*,
-+          to_tsvector(cv.title) ||
-+          to_tsvector(cv.author) AS document
-+          FROM channel_videos cv
-+          JOIN users ON cv.ucid = any(users.subscriptions)
-+          WHERE users.email = $1 AND published > now() - interval '1 month'
-+          ORDER BY published
-+        ) v_search WHERE v_search.document @@ plainto_tsquery($2) LIMIT 20 OFFSET $3;
-         SQL
--        query.text, (query.page - 1) * 20,
-+        user.email, query.text, (query.page - 1) * 20,
-         as: ChannelVideo
-       )
-     end
-diff --git a/src/invidious/users.cr b/src/invidious/users.cr
-index 66dcb935..3213a974 100644
---- a/src/invidious/users.cr
-+++ b/src/invidious/users.cr
-@@ -27,7 +27,6 @@ def get_subscription_feed(user, max_results = 40, page = 1)
-   offset = (page - 1) * limit
+     return PG_DB.query_all(<<-SQL,
+       SELECT id,title,published,updated,ucid,author,length_seconds
+       FROM (
+-        SELECT *,
+-        to_tsvector(#{view_name}.title) ||
+-        to_tsvector(#{view_name}.author)
+-        as document
+-        FROM #{view_name}
+-      ) v_search WHERE v_search.document @@ plainto_tsquery($1) LIMIT 20 OFFSET $2;
++        SELECT cv.*,
++        to_tsvector(cv.title) ||
++        to_tsvector(cv.author) AS document
++        FROM channel_videos cv
++        JOIN users ON cv.ucid = any(users.subscriptions)
++        WHERE users.email = $1 AND published > now() - interval '1 month'
++        ORDER BY published
++      ) v_search WHERE v_search.document @@ plainto_tsquery($2) LIMIT 20 OFFSET $3;
+       SQL
+-      query.text, (query.page - 1) * 20,
++      user.email, query.text, (query.page - 1) * 20,
+       as: ChannelVideo
+     )
+   end
+diff --git a/src/invidious/user/users.cr b/src/invidious/user/users.cr
+index 31db707b..47c78409 100644
+--- a/src/invidious/user/users.cr
++++ b/src/invidious/user/users.cr
+@@ -29,7 +29,6 @@ module Invidious::User::Users
+     offset = (page - 1) * limit
  
-   notifications = Invidious::Database::Users.select_notifications(user)
--  view_name = "subscriptions_#{sha256(user.email)}"
+     notifications = Invidious::Database::Users.select_notifications(user)
+-    view_name = "subscriptions_#{sha256(user.email)}"
  
-   if user.preferences.notifications_only && !notifications.empty?
-     # Only show notifications
-@@ -52,23 +51,39 @@ def get_subscription_feed(user, max_results = 40, page = 1)
-         # Show latest video from a channel that a user hasn't watched
-         # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
+     if user.preferences.notifications_only && !notifications.empty?
+       # Only show notifications
+@@ -54,23 +53,37 @@ module Invidious::User::Users
+           # Show latest video from a channel that a user hasn't watched
+           # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
  
--        videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} WHERE NOT id = ANY ($1::text[]) ORDER BY ucid, published DESC", user.watched, as: ChannelVideo)
-+        # "SELECT cv.* FROM channel_videos cv JOIN users ON cv.ucid = any(users.subscriptions) WHERE users.email = $1 AND published > now() - interval '1 month' ORDER BY published DESC"
-+        # "SELECT DISTINCT ON (cv.ucid) cv.* FROM channel_videos cv JOIN users ON cv.ucid = any(users.subscriptions) WHERE users.email = ? AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' ORDER BY ucid, published DESC"
-+        videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
-+                                 "FROM channel_videos cv " \
-+                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
-+                                 "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
-+                                 "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
+-          videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} WHERE NOT id = ANY ($1::text[]) ORDER BY ucid, published DESC", user.watched, as: ChannelVideo)
++          videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
++                                   "FROM channel_videos cv " \
++                                   "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                   "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
++                                   "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
+         else
+           # Show latest video from each channel
+ 
+-          videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} ORDER BY ucid, published DESC", as: ChannelVideo)
++          videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
++                                   "FROM channel_videos cv " \
++                                   "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                   "WHERE users.email = $1 AND published > now() - interval '1 month' " \
++                                   "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
+         end
+ 
+         videos.sort_by!(&.published).reverse!
        else
-         # Show latest video from each channel
- 
--        videos = PG_DB.query_all("SELECT DISTINCT ON (ucid) * FROM #{view_name} ORDER BY ucid, published DESC", as: ChannelVideo)
-+        videos = PG_DB.query_all("SELECT DISTINCT ON (cv.ucid) cv.* " \
-+                                 "FROM channel_videos cv " \
-+                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
-+                                 "WHERE users.email = $1 AND published > now() - interval '1 month' " \
-+                                 "ORDER BY ucid, published DESC", user.email, as: ChannelVideo)
-       end
- 
-       videos.sort_by!(&.published).reverse!
-     else
-       if user.preferences.unseen_only
-         # Only show unwatched
+         if user.preferences.unseen_only
+           # Only show unwatched
 -
--        videos = PG_DB.query_all("SELECT * FROM #{view_name} WHERE NOT id = ANY ($1::text[]) ORDER BY published DESC LIMIT $2 OFFSET $3", user.watched, limit, offset, as: ChannelVideo)
-+        videos = PG_DB.query_all("SELECT cv.* " \
-+                                 "FROM channel_videos cv " \
-+                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
-+                                 "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
-+                                 "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
-       else
-         # Sort subscriptions as normal
+-          videos = PG_DB.query_all("SELECT * FROM #{view_name} WHERE NOT id = ANY ($1::text[]) ORDER BY published DESC LIMIT $2 OFFSET $3", user.watched, limit, offset, as: ChannelVideo)
++          videos = PG_DB.query_all("SELECT cv.* " \
++                                   "FROM channel_videos cv " \
++                                   "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                   "WHERE users.email = $1 AND NOT cv.id = any(users.watched) AND published > now() - interval '1 month' " \
++                                   "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
+         else
+           # Sort subscriptions as normal
 -
--        videos = PG_DB.query_all("SELECT * FROM #{view_name} ORDER BY published DESC LIMIT $1 OFFSET $2", limit, offset, as: ChannelVideo)
-+        videos = PG_DB.query_all("SELECT cv.* " \
-+                                 "FROM channel_videos cv " \
-+                                 "JOIN users ON cv.ucid = any(users.subscriptions) " \
-+                                 "WHERE users.email = $1 AND published > now() - interval '1 month' " \
-+                                 "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
+-          videos = PG_DB.query_all("SELECT * FROM #{view_name} ORDER BY published DESC LIMIT $1 OFFSET $2", limit, offset, as: ChannelVideo)
++          videos = PG_DB.query_all("SELECT cv.* " \
++                                   "FROM channel_videos cv " \
++                                   "JOIN users ON cv.ucid = any(users.subscriptions) " \
++                                   "WHERE users.email = $1 AND published > now() - interval '1 month' " \
++                                   "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
+         end
        end
-     end
  
 -- 
-2.55.0
+2.56.0
 

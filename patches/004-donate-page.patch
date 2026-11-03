@@ -1,18 +1,18 @@
-From e5080dcd02814e2859030c549f2eefebbabef978 Mon Sep 17 00:00:00 2001
+From e08808bb95664f6d8c611ebe137d5d9e5dd6f2f7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=C3=89milien=20Devos?= <github@emiliendevos.be>
 Date: Tue, 16 Aug 2022 06:59:35 +0000
-Subject: [PATCH] donate page
+Subject: [PATCH 1/6] donate page
 
 ---
  src/invidious/routes/misc.cr                 |  5 +++
  src/invidious/routing.cr                     |  1 +
  src/invidious/views/components/feed_menu.ecr |  3 ++
- src/invidious/views/donate.ecr               | 36 ++++++++++++++++++++
- 4 files changed, 45 insertions(+)
+ src/invidious/views/donate.ecr               | 35 ++++++++++++++++++++
+ 4 files changed, 44 insertions(+)
  create mode 100644 src/invidious/views/donate.ecr
 
 diff --git a/src/invidious/routes/misc.cr b/src/invidious/routes/misc.cr
-index d6bd9571..7abbc360 100644
+index 0b868755..15f714f3 100644
 --- a/src/invidious/routes/misc.cr
 +++ b/src/invidious/routes/misc.cr
 @@ -33,6 +33,11 @@ module Invidious::Routes::Misc
@@ -28,7 +28,7 @@ index d6bd9571..7abbc360 100644
      locale = env.get("preferences").as(Preferences).locale
      rendered "licenses"
 diff --git a/src/invidious/routing.cr b/src/invidious/routing.cr
-index f409f13c..852fb7a8 100644
+index cdcbfdf2..478b74c7 100644
 --- a/src/invidious/routing.cr
 +++ b/src/invidious/routing.cr
 @@ -18,6 +18,7 @@ module Invidious::Routing
@@ -40,7 +40,7 @@ index f409f13c..852fb7a8 100644
        get "/licenses", Routes::Misc, :licenses
        get "/redirect", Routes::Misc, :cross_instance_redirect
 diff --git a/src/invidious/views/components/feed_menu.ecr b/src/invidious/views/components/feed_menu.ecr
-index 3dbeaf37..d84d03d0 100644
+index aeaf183b..dbd3cf03 100644
 --- a/src/invidious/views/components/feed_menu.ecr
 +++ b/src/invidious/views/components/feed_menu.ecr
 @@ -1,4 +1,7 @@
@@ -53,7 +53,7 @@ index 3dbeaf37..d84d03d0 100644
          <% feed_menu.reject! {|item| {"Subscriptions", "Playlists"}.includes? item} %>
 diff --git a/src/invidious/views/donate.ecr b/src/invidious/views/donate.ecr
 new file mode 100644
-index 00000000..0c7deecc
+index 00000000..718733a1
 --- /dev/null
 +++ b/src/invidious/views/donate.ecr
 @@ -0,0 +1,35 @@
@@ -94,5 +94,5 @@ index 00000000..0c7deecc
 +</div>
 \ No newline at end of file
 -- 
-2.36.1
+2.56.0
 

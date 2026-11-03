@@ -1,7 +1,7 @@
-From 1ec116ac3efad05e0e3f30e2ad5856f66b04012f Mon Sep 17 00:00:00 2001
+From 5d4be5d7d66c312d719fac60607b4677dba76249 Mon Sep 17 00:00:00 2001
 From: Your Name <you@example.com>
 Date: Sat, 7 Feb 2026 11:58:12 +0000
-Subject: [PATCH] use redis for video cache
+Subject: [PATCH 2/6] use redis for video cache
 
 ---
  shard.lock                       |  9 ++++++++-
@@ -9,7 +9,7 @@ Subject: [PATCH] use redis for video cache
  src/invidious.cr                 |  6 ++++++
  src/invidious/config.cr          |  3 +++
  src/invidious/database/videos.cr | 16 +++++++++++++++-
- src/invidious/videos.cr          |  2 +-
+ src/invidious/videos/videos.cr   |  2 +-
  6 files changed, 35 insertions(+), 3 deletions(-)
 
 diff --git a/shard.lock b/shard.lock
@@ -44,7 +44,7 @@ index 7aaa7470..5e9d524b 100644
      version: 0.21.0
 -
 diff --git a/shard.yml b/shard.yml
-index beb35f91..5c44742b 100644
+index c8d1d0c7..5e26330a 100644
 --- a/shard.yml
 +++ b/shard.yml
 @@ -33,6 +33,8 @@ dependencies:
@@ -57,7 +57,7 @@ index beb35f91..5c44742b 100644
  development_dependencies:
    spectator:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index c436ad3c..d05ddf75 100644
+index c4a98635..859dea74 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
 @@ -30,6 +30,7 @@ require "xml"
@@ -68,7 +68,7 @@ index c436ad3c..d05ddf75 100644
  
  require "./invidious/database/*"
  require "./invidious/database/migrations/*"
-@@ -88,6 +89,11 @@ rescue ex
+@@ -90,6 +91,11 @@ rescue ex
    puts "Check your 'config.yml' database settings or PostgreSQL settings."
    exit(1)
  end
@@ -81,7 +81,7 @@ index c436ad3c..d05ddf75 100644
  MAX_ITEMS_PER_PAGE = 1500
  
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 94a3946c..aadad54b 100644
+index baf9bef2..96c2ed73 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -118,6 +118,9 @@ class Config
@@ -141,10 +141,10 @@ index 40bafaf1..174c4de7 100644
 +    end
    end
  end
-diff --git a/src/invidious/videos.cr b/src/invidious/videos.cr
+diff --git a/src/invidious/videos/videos.cr b/src/invidious/videos/videos.cr
 index dfaab3d3..483092ed 100644
---- a/src/invidious/videos.cr
-+++ b/src/invidious/videos.cr
+--- a/src/invidious/videos/videos.cr
++++ b/src/invidious/videos/videos.cr
 @@ -311,7 +311,7 @@ def get_video(id, refresh = true, region = nil, force_refresh = false)
         video.schema_version != Video::SCHEMA_VERSION # cache control
        begin
@@ -155,5 +155,5 @@ index dfaab3d3..483092ed 100644
          Invidious::Database::Videos.delete(id)
          raise ex
 -- 
-2.55.0
+2.56.0
 
