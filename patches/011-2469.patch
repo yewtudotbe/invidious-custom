@@ -1,12 +1,11 @@
-From 78fdaf5d9579e6cbace4a590ff2d854480aa6a1d Mon Sep 17 00:00:00 2001
+From 3c8a14070a9aaa8126d555aed27819353b5bdd56 Mon Sep 17 00:00:00 2001
 From: Emilien Devos <4016501+unixfox@users.noreply.github.com>
 Date: Wed, 26 Jul 2023 15:43:43 +0200
-Subject: [PATCH 3/6] limit feeds and delete materialized views
+Subject: [PATCH] limit feeds and delete materialized views
 
 ---
  config/migrate-scripts/migrate-db-8bc91ce.sh |  6 ++
  config/sql/channel_videos.sql                |  8 +--
- kubernetes/values.yaml                       | 60 ++++++++++++++++
  src/invidious.cr                             | 12 ----
  src/invidious/config.cr                      |  2 -
  src/invidious/jobs/refresh_feeds_job.cr      | 75 --------------------
@@ -14,14 +13,13 @@ Subject: [PATCH 3/6] limit feeds and delete materialized views
  src/invidious/routes/login.cr                |  3 -
  src/invidious/search/processors.cr           | 18 ++---
  src/invidious/user/users.cr                  | 27 +++++--
- 10 files changed, 99 insertions(+), 114 deletions(-)
+ 9 files changed, 39 insertions(+), 114 deletions(-)
  create mode 100644 config/migrate-scripts/migrate-db-8bc91ce.sh
- create mode 100644 kubernetes/values.yaml
  delete mode 100644 src/invidious/jobs/refresh_feeds_job.cr
 
 diff --git a/config/migrate-scripts/migrate-db-8bc91ce.sh b/config/migrate-scripts/migrate-db-8bc91ce.sh
 new file mode 100644
-index 00000000..04388175
+index 0000000000..04388175e8
 --- /dev/null
 +++ b/config/migrate-scripts/migrate-db-8bc91ce.sh
 @@ -0,0 +1,6 @@
@@ -33,7 +31,7 @@ index 00000000..04388175
 +DROP INDEX channel_videos_ucid_idx;
 \ No newline at end of file
 diff --git a/config/sql/channel_videos.sql b/config/sql/channel_videos.sql
-index cd4e0ffd..f2ac4876 100644
+index cd4e0ffdb3..f2ac4876c4 100644
 --- a/config/sql/channel_videos.sql
 +++ b/config/sql/channel_videos.sql
 @@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS public.channel_videos
@@ -53,77 +51,11 @@ index cd4e0ffd..f2ac4876 100644
 -  (ucid COLLATE pg_catalog."default");
 +  (ucid COLLATE pg_catalog."default", published);
  
-diff --git a/kubernetes/values.yaml b/kubernetes/values.yaml
-new file mode 100644
-index 00000000..17d69b5d
---- /dev/null
-+++ b/kubernetes/values.yaml
-@@ -0,0 +1,60 @@
-+name: invidious
-+
-+image:
-+  repository: quay.io/invidious/invidious
-+  tag: latest
-+  pullPolicy: Always
-+
-+replicaCount: 1
-+
-+autoscaling:
-+  enabled: false
-+  minReplicas: 1
-+  maxReplicas: 16
-+  targetCPUUtilizationPercentage: 50
-+
-+service:
-+  type: ClusterIP
-+  port: 3000
-+  #loadBalancerIP:
-+
-+resources: {}
-+  #requests:
-+  #  cpu: 100m
-+  #  memory: 64Mi
-+  #limits:
-+  #  cpu: 800m
-+  #  memory: 512Mi
-+
-+securityContext:
-+  allowPrivilegeEscalation: false
-+  runAsUser: 1000
-+  runAsGroup: 1000
-+  fsGroup: 1000
-+
-+# See https://github.com/bitnami/charts/tree/master/bitnami/postgresql
-+postgresql:
-+  image:
-+    tag: 13
-+  auth:
-+    username: kemal
-+    password: kemal
-+    database: invidious
-+  primary:
-+    initdb:
-+      username: kemal
-+      password: kemal
-+      scriptsConfigMap: invidious-postgresql-init
-+
-+# Adapted from ../config/config.yml
-+config:
-+  channel_threads: 1
-+  db:
-+    user: kemal
-+    password: kemal
-+    host: invidious-postgresql
-+    port: 5432
-+    dbname: invidious
-+  full_refresh: false
-+  https_only: false
-+  domain:
 diff --git a/src/invidious.cr b/src/invidious.cr
-index 859dea74..b19f2f50 100644
+index c4a986358f..efef78b04d 100644
 --- a/src/invidious.cr
 +++ b/src/invidious.cr
-@@ -136,14 +136,6 @@ Kemal.config.extra_options do |parser|
+@@ -130,14 +130,6 @@ Kemal.config.extra_options do |parser|
        exit
      end
    end
@@ -138,7 +70,7 @@ index 859dea74..b19f2f50 100644
    parser.on("-o OUTPUT", "--output=OUTPUT", "Redirect output (default: #{CONFIG.output})") do |output|
      CONFIG.output = output
    end
-@@ -195,10 +187,6 @@ if CONFIG.channel_threads > 0
+@@ -189,10 +181,6 @@ if CONFIG.channel_threads > 0
    Invidious::Jobs.register Invidious::Jobs::RefreshChannelsJob.new(PG_DB)
  end
  
@@ -150,7 +82,7 @@ index 859dea74..b19f2f50 100644
    Invidious::Jobs.register Invidious::Jobs::StatisticsRefreshJob.new(PG_DB, SOFTWARE)
  end
 diff --git a/src/invidious/config.cr b/src/invidious/config.cr
-index 96c2ed73..74ee3607 100644
+index baf9bef216..a3fc150983 100644
 --- a/src/invidious/config.cr
 +++ b/src/invidious/config.cr
 @@ -101,8 +101,6 @@ class Config
@@ -164,7 +96,7 @@ index 96c2ed73..74ee3607 100644
    # Default log level, valid YAML values are ints and strings, see src/invidious/helpers/logger.cr
 diff --git a/src/invidious/jobs/refresh_feeds_job.cr b/src/invidious/jobs/refresh_feeds_job.cr
 deleted file mode 100644
-index dfb93ebf..00000000
+index dfb93ebf4f..0000000000
 --- a/src/invidious/jobs/refresh_feeds_job.cr
 +++ /dev/null
 @@ -1,75 +0,0 @@
@@ -244,7 +176,7 @@ index dfb93ebf..00000000
 -  end
 -end
 diff --git a/src/invidious/routes/account.cr b/src/invidious/routes/account.cr
-index 5028fc8f..c06cbeca 100644
+index 5028fc8f55..c06cbecaa1 100644
 --- a/src/invidious/routes/account.cr
 +++ b/src/invidious/routes/account.cr
 @@ -123,10 +123,8 @@ module Invidious::Routes::Account
@@ -259,7 +191,7 @@ index 5028fc8f..c06cbeca 100644
      env.request.cookies.each do |cookie|
        cookie.expires = Time.utc(1990, 1, 1)
 diff --git a/src/invidious/routes/login.cr b/src/invidious/routes/login.cr
-index 08fe9a8b..9fd663aa 100644
+index 08fe9a8bbb..9fd663aa13 100644
 --- a/src/invidious/routes/login.cr
 +++ b/src/invidious/routes/login.cr
 @@ -125,9 +125,6 @@ module Invidious::Routes::Login
@@ -273,7 +205,7 @@ index 08fe9a8b..9fd663aa 100644
            env.response.cookies["SID"] = Invidious::User::Cookies.sid(CONFIG.alternative_domains[alt], sid)
          else
 diff --git a/src/invidious/search/processors.cr b/src/invidious/search/processors.cr
-index b39777f4..4aec650d 100644
+index b39777f428..4aec650d31 100644
 --- a/src/invidious/search/processors.cr
 +++ b/src/invidious/search/processors.cr
 @@ -36,19 +36,19 @@ module Invidious::Search::Processors
@@ -306,10 +238,19 @@ index b39777f4..4aec650d 100644
      )
    end
 diff --git a/src/invidious/user/users.cr b/src/invidious/user/users.cr
-index 31db707b..47c78409 100644
+index 31db707bf8..1d725f9e61 100644
 --- a/src/invidious/user/users.cr
 +++ b/src/invidious/user/users.cr
-@@ -29,7 +29,6 @@ module Invidious::User::Users
+@@ -2,8 +2,6 @@ require "crypto/bcrypt/password"
+ 
+ module Invidious::User::Users
+   extend self
+-  # Materialized views may not be defined using bound parameters (`$1` as used elsewhere)
+-  MATERIALIZED_VIEW_SQL = ->(email : String) { "SELECT cv.* FROM channel_videos cv WHERE EXISTS (SELECT subscriptions FROM users u WHERE cv.ucid = ANY (u.subscriptions) AND u.email = E'#{email.gsub({'\'' => "\\'", '\\' => "\\\\"})}') ORDER BY published DESC" }
+ 
+   def create_user(sid, email, password)
+     password = Crypto::Bcrypt::Password.create(password, cost: 10)
+@@ -29,7 +27,6 @@ module Invidious::User::Users
      offset = (page - 1) * limit
  
      notifications = Invidious::Database::Users.select_notifications(user)
@@ -317,7 +258,7 @@ index 31db707b..47c78409 100644
  
      if user.preferences.notifications_only && !notifications.empty?
        # Only show notifications
-@@ -54,23 +53,37 @@ module Invidious::User::Users
+@@ -54,11 +51,19 @@ module Invidious::User::Users
            # Show latest video from a channel that a user hasn't watched
            # "unseen_only" isn't really correct here, more accurate would be "unwatched_only"
  
@@ -339,10 +280,10 @@ index 31db707b..47c78409 100644
          end
  
          videos.sort_by!(&.published).reverse!
-       else
+@@ -66,11 +71,19 @@ module Invidious::User::Users
          if user.preferences.unseen_only
            # Only show unwatched
--
+ 
 -          videos = PG_DB.query_all("SELECT * FROM #{view_name} WHERE NOT id = ANY ($1::text[]) ORDER BY published DESC LIMIT $2 OFFSET $3", user.watched, limit, offset, as: ChannelVideo)
 +          videos = PG_DB.query_all("SELECT cv.* " \
 +                                   "FROM channel_videos cv " \
@@ -351,7 +292,7 @@ index 31db707b..47c78409 100644
 +                                   "ORDER BY published DESC LIMIT $2 OFFSET $3", user.email, limit, offset, as: ChannelVideo)
          else
            # Sort subscriptions as normal
--
+ 
 -          videos = PG_DB.query_all("SELECT * FROM #{view_name} ORDER BY published DESC LIMIT $1 OFFSET $2", limit, offset, as: ChannelVideo)
 +          videos = PG_DB.query_all("SELECT cv.* " \
 +                                   "FROM channel_videos cv " \
@@ -361,6 +302,3 @@ index 31db707b..47c78409 100644
          end
        end
  
--- 
-2.56.0
-
